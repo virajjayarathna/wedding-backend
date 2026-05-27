@@ -111,7 +111,7 @@ export async function createAdmin(req: Request, res: Response) {
 
 export async function getAdmin(req: Request, res: Response) {
   const admin = await prisma.admin.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     include: {
       wedding: {
         select: {
@@ -130,7 +130,7 @@ export async function updateAdmin(req: Request, res: Response) {
   const body = updateAdminSchema.parse(req.body);
 
   const admin = await prisma.admin.update({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     data: body,
     select: { id: true, email: true, displayName: true, phone: true, status: true, updatedAt: true },
   });
@@ -139,8 +139,8 @@ export async function updateAdmin(req: Request, res: Response) {
 }
 
 export async function deleteAdmin(req: Request, res: Response) {
-  await prisma.admin.findUniqueOrThrow({ where: { id: req.params.id } });
-  await prisma.admin.delete({ where: { id: req.params.id } });
+  await prisma.admin.findUniqueOrThrow({ where: { id: req.params.id as string } });
+  await prisma.admin.delete({ where: { id: req.params.id as string } });
   res.json({ success: true, message: 'Admin deleted successfully' });
 }
 
@@ -148,7 +148,7 @@ export async function updateSubscription(req: Request, res: Response) {
   const body = subscriptionSchema.parse(req.body);
 
   const admin = await prisma.admin.update({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     data: {
       ...(body.status && { status: body.status }),
       ...(body.subscriptionStart !== undefined && {
@@ -169,7 +169,7 @@ export async function resetAdminPassword(req: Request, res: Response) {
   const passwordHash = await bcrypt.hash(newPassword, 12);
 
   await prisma.admin.update({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     data: { passwordHash },
   });
 

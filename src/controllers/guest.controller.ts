@@ -4,9 +4,14 @@ import { createId } from '@paralleldrive/cuid2';
 import prisma from '../lib/prisma';
 import { ApiError } from '../utils/ApiError';
 import { config } from '../config/env';
+import { parseCsv } from '../utils/csvParser';
+
+// ─── Validation Schemas ────────────────────────────────────────────────────────
+
+const VALID_TITLES = ['MR', 'MRS', 'MS', 'DR', 'FAMILY', 'MASTER'] as const;
 
 const guestSchema = z.object({
-  title: z.enum(['MR', 'MRS', 'MS', 'DR', 'FAMILY', 'MASTER']),
+  title: z.enum(VALID_TITLES),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   phone: z.string().optional(),
@@ -17,11 +22,19 @@ const TITLE_LABELS: Record<string, string> = {
   MR: 'Mr.', MRS: 'Mrs.', MS: 'Ms.', DR: 'Dr.', FAMILY: 'Family', MASTER: 'Master',
 };
 
+// ─── Helper ────────────────────────────────────────────────────────────────────
+
 async function getWeddingForAdmin(adminId: string) {
   const wedding = await prisma.weddingDetails.findUnique({ where: { adminId } });
-  if (!wedding) throw ApiError.notFound('Wedding details not found. Please set up your wedding page first.');
+  if (!wedding) {
+    throw ApiError.notFound(
+      'Wedding details not found. Please set up your wedding page first.'
+    );
+  }
   return wedding;
 }
+
+// ─── Controllers ───────────────────────────────────────────────────────────────
 
 export async function listGuests(req: Request, res: Response) {
   const wedding = await getWeddingForAdmin(req.user!.id);
@@ -42,7 +55,7 @@ export async function listGuests(req: Request, res: Response) {
     orderBy: { createdAt: 'desc' },
   });
 
-  res.json({ success: true, data: guests });
+  res.json({ success: true, data: guests, total: guests.length });
 }
 
 export async function createGuest(req: Request, res: Response) {
@@ -56,25 +69,64 @@ export async function createGuest(req: Request, res: Response) {
   res.status(201).json({ success: true, data: guest });
 }
 
+/**
+ * Bulk import guests via JSON array OR raw CSV text.
+ * Body: { guests: [...] }  OR  { csv: "title,firstName,lastName\n..." }
+ */
 export async function bulkCreateGuests(req: Request, res: Response) {
-  const body = z.object({
-    guests: z.array(guestSchema).min(1).max(500),
-  }).parse(req.body);
-
   const wedding = await getWeddingForAdmin(req.user!.id);
 
-  const guests = await prisma.guest.createMany({
-    data: body.guests.map((g) => ({ ...g, weddingId: wedding.id })),
-    skipDuplicates: true,
+  let guestsData: Array<{
+    title: any;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    maxAttendants: number;
+  }>;
+
+  // CSV text import
+  if (req.body.csv) {
+    const rows = parseCsv(req.body.csv as string);
+    if (rows.length === 0) throw ApiError.badRequest('No valid rows found in CSV.');
+    if (rows.length > 500) throw ApiError.badRequest('Maximum 500 guests per bulk import.');
+
+    guestsData = rows.map((r) => ({
+      title: r.title as any,
+      firstName: r.firstName,
+      lastName: r.lastName,
+      phone: r.phone,
+      maxAttendants: r.maxAttendants ?? 1,
+    }));
+  } else {
+    // JSON array import
+    const body = z
+      .object({ guests: z.array(guestSchema).min(1).max(500) })
+      .parse(req.body);
+    guestsData = body.guests;
+  }
+
+  // Validate all titles
+  const invalidTitles = guestsData
+    .filter((g) => !VALID_TITLES.includes(g.title))
+    .map((g) => g.title);
+  if (invalidTitles.length > 0) {
+    throw ApiError.badRequest(
+      `Invalid titles: ${[...new Set(invalidTitles)].join(', ')}. Valid: ${VALID_TITLES.join(', ')}`
+    );
+  }
+
+  const result = await prisma.guest.createMany({
+    data: guestsData.map((g) => ({ ...g, weddingId: wedding.id })),
+    skipDuplicates: false,
   });
 
-  res.status(201).json({ success: true, data: { created: guests.count } });
+  res.status(201).json({ success: true, data: { created: result.count } });
 }
 
 export async function getGuest(req: Request, res: Response) {
   const wedding = await getWeddingForAdmin(req.user!.id);
   const guest = await prisma.guest.findFirst({
-    where: { id: req.params.id, weddingId: wedding.id },
+    where: { id: req.params.id as string, weddingId: wedding.id },
   });
   if (!guest) throw ApiError.notFound('Guest not found');
   res.json({ success: true, data: guest });
@@ -84,36 +136,39 @@ export async function updateGuest(req: Request, res: Response) {
   const body = guestSchema.partial().parse(req.body);
   const wedding = await getWeddingForAdmin(req.user!.id);
 
-  const guest = await prisma.guest.findFirst({ where: { id: req.params.id, weddingId: wedding.id } });
+  const guest = await prisma.guest.findFirst({
+    where: { id: req.params.id as string, weddingId: wedding.id },
+  });
   if (!guest) throw ApiError.notFound('Guest not found');
 
-  const updated = await prisma.guest.update({ where: { id: req.params.id }, data: body });
+  const updated = await prisma.guest.update({ where: { id: req.params.id as string }, data: body });
   res.json({ success: true, data: updated });
 }
 
 export async function deleteGuest(req: Request, res: Response) {
   const wedding = await getWeddingForAdmin(req.user!.id);
-  const guest = await prisma.guest.findFirst({ where: { id: req.params.id, weddingId: wedding.id } });
+  const guest = await prisma.guest.findFirst({
+    where: { id: req.params.id as string, weddingId: wedding.id },
+  });
   if (!guest) throw ApiError.notFound('Guest not found');
 
-  await prisma.guest.delete({ where: { id: req.params.id } });
+  await prisma.guest.delete({ where: { id: req.params.id as string } });
   res.json({ success: true, message: 'Guest deleted' });
 }
 
 export async function getRsvpSummary(req: Request, res: Response) {
   const wedding = await getWeddingForAdmin(req.user!.id);
 
-  const [attending, declining, pending, maybe] = await Promise.all([
+  const [attending, declining, pending, maybe, headcountResult] = await Promise.all([
     prisma.guest.count({ where: { weddingId: wedding.id, rsvpStatus: 'ATTENDING' } }),
     prisma.guest.count({ where: { weddingId: wedding.id, rsvpStatus: 'DECLINING' } }),
     prisma.guest.count({ where: { weddingId: wedding.id, rsvpStatus: 'PENDING' } }),
     prisma.guest.count({ where: { weddingId: wedding.id, rsvpStatus: 'MAYBE' } }),
+    prisma.guest.aggregate({
+      where: { weddingId: wedding.id, rsvpStatus: 'ATTENDING' },
+      _sum: { attendingCount: true },
+    }),
   ]);
-
-  const attendingCountResult = await prisma.guest.aggregate({
-    where: { weddingId: wedding.id, rsvpStatus: 'ATTENDING' },
-    _sum: { attendingCount: true },
-  });
 
   res.json({
     success: true,
@@ -122,24 +177,32 @@ export async function getRsvpSummary(req: Request, res: Response) {
       declining,
       pending,
       maybe,
-      totalConfirmedHeadcount: attendingCountResult._sum.attendingCount ?? 0,
+      totalGuests: attending + declining + pending + maybe,
+      totalConfirmedHeadcount: headcountResult._sum.attendingCount ?? 0,
     },
   });
 }
 
 export async function getWhatsAppLink(req: Request, res: Response) {
   const wedding = await getWeddingForAdmin(req.user!.id);
-  const guest = await prisma.guest.findFirst({ where: { id: req.params.id, weddingId: wedding.id } });
+  const guest = await prisma.guest.findFirst({
+    where: { id: req.params.id as string, weddingId: wedding.id },
+  });
   if (!guest) throw ApiError.notFound('Guest not found');
 
-  const weddingDetails = await prisma.weddingDetails.findUnique({ where: { id: wedding.id } });
+  const weddingDetails = await prisma.weddingDetails.findUnique({
+    where: { id: wedding.id },
+  });
   if (!weddingDetails) throw ApiError.notFound('Wedding details not found');
 
   const inviteUrl = `${config.guestInviteBaseUrl}/invite/${guest.token}`;
   const titleLabel = TITLE_LABELS[guest.title] || guest.title;
   const guestName = `${titleLabel} ${guest.firstName} ${guest.lastName}`;
   const weddingDate = weddingDetails.weddingDate.toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   });
 
   const message =
@@ -149,27 +212,42 @@ export async function getWhatsAppLink(req: Request, res: Response) {
     `Please view your personal invitation and kindly RSVP here:\n${inviteUrl}\n\n` +
     `We look forward to celebrating with you! 💍`;
 
-  const phone = guest.phone?.replace(/[^0-9]/g, '') || '';
+  // Strip non-numeric chars, keep + prefix
+  const phone = guest.phone?.replace(/[^0-9+]/g, '').replace(/^\+/, '') || '';
   const whatsappUrl = phone
     ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
     : `https://wa.me/?text=${encodeURIComponent(message)}`;
 
-  res.json({ success: true, data: { guestName, inviteUrl, whatsappUrl, message } });
+  res.json({
+    success: true,
+    data: {
+      guestName,
+      inviteUrl,
+      whatsappUrl,
+      message,
+      hasPhone: !!phone,
+    },
+  });
 }
 
 export async function regenerateToken(req: Request, res: Response) {
   const wedding = await getWeddingForAdmin(req.user!.id);
-  const guest = await prisma.guest.findFirst({ where: { id: req.params.id, weddingId: wedding.id } });
+  const guest = await prisma.guest.findFirst({
+    where: { id: req.params.id as string, weddingId: wedding.id },
+  });
   if (!guest) throw ApiError.notFound('Guest not found');
 
   // Generate a new unique token
   let newToken: string;
+  let attempts = 0;
   do {
     newToken = createId();
+    attempts++;
+    if (attempts > 10) throw ApiError.internal('Failed to generate unique token');
   } while (await prisma.guest.findUnique({ where: { token: newToken } }));
 
   const updated = await prisma.guest.update({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     data: { token: newToken },
     select: { id: true, token: true },
   });
@@ -182,10 +260,12 @@ export async function downloadCsvTemplate(_req: Request, res: Response) {
     'title,firstName,lastName,phone,maxAttendants',
     'MR,John,Smith,+94771234567,2',
     'MRS,Jane,Doe,+94777654321,1',
-    'FAMILY,The,Johnsons,+94711234567,4',
+    'MS,Sarah,Johnson,+94711234567,1',
+    'FAMILY,The,Johnsons,+94722345678,4',
+    'DR,Alan,Brown,,1',
   ].join('\n');
 
-  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="guest-import-template.csv"');
   res.send(csvContent);
 }

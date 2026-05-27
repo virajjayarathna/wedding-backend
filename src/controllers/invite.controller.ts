@@ -11,31 +11,35 @@ const rsvpSchema = z.object({
 });
 
 export async function resolveInvite(req: Request, res: Response) {
-  const { token } = req.params;
+  const token = req.params.token as string;
 
   const guest = await prisma.guest.findUnique({
     where: { token },
-    include: {
-      wedding: {
-        include: {
-          admin: { select: { status: true, subscriptionEnd: true } },
-        },
-      },
-    },
+    include: { wedding: true },
   });
 
   if (!guest) throw ApiError.notFound('This invitation link is invalid or has expired.');
 
-  // Check if the wedding is published and admin subscription is active
-  const { admin, ...weddingDetails } = guest.wedding;
+  const weddingDetails = guest.wedding;
+
+  // Check wedding is published
   if (!weddingDetails.isPublished) {
     throw ApiError.notFound('This invitation is not yet available.');
   }
-  if (admin.status !== 'ACTIVE' || (admin.subscriptionEnd && admin.subscriptionEnd < new Date())) {
+
+  // Check admin subscription is active
+  const admin = await prisma.admin.findUnique({
+    where: { id: weddingDetails.adminId },
+    select: { status: true, subscriptionEnd: true },
+  });
+
+  if (!admin || admin.status !== 'ACTIVE') {
+    throw ApiError.notFound('This invitation link is no longer active.');
+  }
+  if (admin.subscriptionEnd && admin.subscriptionEnd < new Date()) {
     throw ApiError.notFound('This invitation link is no longer active.');
   }
 
-  // Return guest info + wedding details (exclude sensitive admin data)
   res.json({
     success: true,
     data: {
@@ -76,7 +80,7 @@ export async function resolveInvite(req: Request, res: Response) {
 }
 
 export async function submitRsvp(req: Request, res: Response) {
-  const { token } = req.params;
+  const token = req.params.token as string;
   const body = rsvpSchema.parse(req.body);
 
   const guest = await prisma.guest.findUnique({
