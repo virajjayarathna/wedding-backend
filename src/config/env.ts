@@ -36,6 +36,8 @@ export const config = {
     s3Bucket: process.env.AWS_S3_BUCKET || 's3-wedding-app',
     // Public bucket URL — no CloudFront needed since bucket is public
     cdnBaseUrl: process.env.AWS_CDN_BASE_URL || 'https://s3-wedding-app.s3.us-east-1.amazonaws.com',
+    // Backend media proxy base URL — used to serve images if S3 is private
+    mediaProxyBaseUrl: process.env.MEDIA_PROXY_BASE_URL || 'http://localhost:4000',
     presignedUrlExpires: parseInt(process.env.S3_PRESIGNED_URL_EXPIRES || '900', 10),
   },
 

@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
 import { ApiError } from '../utils/ApiError';
+import { extractKeyFromUrl } from '../services/s3.service';
+import { config } from '../config/env';
 
 const rsvpSchema = z.object({
   rsvpStatus: z.enum(['ATTENDING', 'DECLINING', 'MAYBE']),
@@ -40,6 +42,20 @@ export async function resolveInvite(req: Request, res: Response) {
     throw ApiError.notFound('This invitation link is no longer active.');
   }
 
+  /**
+   * Converts a stored URL to a proxy URL if it points directly to S3.
+   * Handles both old s3.amazonaws.com URLs and new proxy URLs transparently.
+   */
+  function toProxyUrl(url: string | null | undefined): string | null {
+    if (!url) return null;
+    // Already a proxy URL
+    if (url.includes('/v1/media/')) return url;
+    // Direct S3 URL — extract key and build proxy URL
+    const key = extractKeyFromUrl(url);
+    if (!key) return url; // Unknown format, return as-is
+    return `${config.aws.mediaProxyBaseUrl}/v1/media/${key}`;
+  }
+
   res.json({
     success: true,
     data: {
@@ -60,9 +76,9 @@ export async function resolveInvite(req: Request, res: Response) {
         weddingDate: weddingDetails.weddingDate,
         weddingSlug: weddingDetails.weddingSlug,
         loveStory: weddingDetails.loveStory,
-        coverPhotoUrl: weddingDetails.coverPhotoUrl,
-        heroPhotoUrl: weddingDetails.heroPhotoUrl,
-        galleryUrls: weddingDetails.galleryUrls,
+        coverPhotoUrl: toProxyUrl(weddingDetails.coverPhotoUrl),
+        heroPhotoUrl: toProxyUrl(weddingDetails.heroPhotoUrl),
+        galleryUrls: weddingDetails.galleryUrls.map((u) => toProxyUrl(u) ?? u),
         venueName: weddingDetails.venueName,
         venueAddress: weddingDetails.venueAddress,
         venueMapsUrl: weddingDetails.venueMapsUrl,

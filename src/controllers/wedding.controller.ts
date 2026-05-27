@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
 import { ApiError } from '../utils/ApiError';
+import { config } from '../config/env';
 import {
   uploadFileToS3,
   deleteS3Object,
@@ -61,6 +62,25 @@ export async function getWedding(req: Request, res: Response) {
     where: { adminId: req.user!.id },
     include: { _count: { select: { guests: true } } },
   });
+
+  if (wedding) {
+    // Transform stored S3 URLs to proxy URLs for backward compatibility
+    const toProxyUrl = (url: string | null | undefined): string | null => {
+      if (!url) return null;
+      if (url.includes('/v1/media/')) return url; // already proxied
+      const key = extractKeyFromUrl(url);
+      if (!key) return url;
+      return `${config.aws.mediaProxyBaseUrl}/v1/media/${key}`;
+    };
+    const withProxied = {
+      ...wedding,
+      coverPhotoUrl: toProxyUrl(wedding.coverPhotoUrl),
+      heroPhotoUrl: toProxyUrl(wedding.heroPhotoUrl),
+      galleryUrls: wedding.galleryUrls.map((u) => toProxyUrl(u) ?? u),
+    };
+    return res.json({ success: true, data: withProxied });
+  }
+
   res.json({ success: true, data: wedding });
 }
 
@@ -136,13 +156,32 @@ export async function uploadPhoto(req: Request, res: Response) {
     file.buffer
   );
 
-  // Save URL into the wedding record immediately
+  // Save URL into the wedding record immediately, replacing old URL
   const field = purpose === 'cover' ? 'coverPhotoUrl' : purpose === 'hero' ? 'heroPhotoUrl' : null;
   if (field) {
+    // Fetch the current URL so we can delete the old S3 object
+    const existing = await prisma.weddingDetails.findUnique({
+      where: { adminId: req.user!.id },
+      select: { [field]: true },
+    });
+    const oldUrl = existing?.[field as keyof typeof existing] as string | null | undefined;
+
     await prisma.weddingDetails.updateMany({
       where: { adminId: req.user!.id },
       data: { [field]: publicUrl },
     });
+
+    // Delete the old S3 object if it existed (non-fatal)
+    if (oldUrl) {
+      const oldKey = extractKeyFromUrl(oldUrl);
+      if (oldKey) {
+        try {
+          await deleteS3Object(oldKey);
+        } catch (err) {
+          console.error('Failed to delete old S3 object (non-fatal):', err);
+        }
+      }
+    }
   }
 
   res.json({ success: true, data: { publicUrl } });

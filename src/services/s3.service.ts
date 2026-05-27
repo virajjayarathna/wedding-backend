@@ -51,10 +51,13 @@ export function buildS3Key(adminId: string, purpose: UploadPurpose, mimeType: st
 }
 
 /**
- * Build the public CDN URL for a given S3 key.
+ * Build the URL to serve a given S3 key.
+ * By default routes through the backend /v1/media proxy so images
+ * are always accessible regardless of S3 bucket ACL settings.
+ * Set AWS_CDN_BASE_URL to a CloudFront/CDN URL to bypass the proxy.
  */
 export function buildPublicUrl(key: string): string {
-  return `${config.aws.cdnBaseUrl}/${key}`;
+  return `${config.aws.mediaProxyBaseUrl}/v1/media/${key}`;
 }
 
 /**
@@ -76,6 +79,8 @@ export async function uploadFileToS3(
     Body: buffer,
     ContentType: mimeType,
     CacheControl: 'max-age=31536000',
+    // ACL removed — bucket has "Object Ownership: Bucket owner enforced" which
+    // disables all ACLs. Images are served via the /v1/media/ proxy instead.
   });
 
   await s3Client.send(command);

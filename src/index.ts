@@ -12,6 +12,7 @@ import authRoutes from './routes/auth.routes';
 import superAdminRoutes from './routes/superadmin.routes';
 import adminRoutes from './routes/admin.routes';
 import inviteRoutes from './routes/invite.routes';
+import mediaRoutes from './routes/media.routes';
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.use('/v1/auth', authRoutes);
 app.use('/v1/superadmin', superAdminRoutes);
 app.use('/v1/admin', adminRoutes);
 app.use('/v1/invite', inviteRoutes);
+app.use('/v1/media', mediaRoutes);
 
 // 404 handler
 app.use((_req, res) => {
