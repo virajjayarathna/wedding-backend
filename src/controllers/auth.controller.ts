@@ -21,10 +21,10 @@ export async function loginSuperAdmin(req: Request, res: Response) {
   const { email, password } = loginSchema.parse(req.body);
 
   const admin = await prisma.superAdmin.findUnique({ where: { email } });
-  if (!admin) throw ApiError.unauthorized('Invalid credentials');
+  if (!admin) throw ApiError.unauthorized('Email not found');
 
   const valid = await bcrypt.compare(password, admin.passwordHash);
-  if (!valid) throw ApiError.unauthorized('Invalid credentials');
+  if (!valid) throw ApiError.unauthorized('Password incorrect');
 
   const token = signToken(admin.id, admin.email, 'SUPER_ADMIN');
   res.json({ success: true, token, user: { id: admin.id, email: admin.email, role: 'SUPER_ADMIN' } });
@@ -34,12 +34,12 @@ export async function loginAdmin(req: Request, res: Response) {
   const { email, password } = loginSchema.parse(req.body);
 
   const admin = await prisma.admin.findUnique({ where: { email } });
-  if (!admin) throw ApiError.unauthorized('Invalid credentials');
+  if (!admin) throw ApiError.unauthorized('Email not found');
 
   if (admin.status === 'SUSPENDED') throw ApiError.forbidden('Account suspended. Contact support.');
 
   const valid = await bcrypt.compare(password, admin.passwordHash);
-  if (!valid) throw ApiError.unauthorized('Invalid credentials');
+  if (!valid) throw ApiError.unauthorized('Password incorrect');
 
   const token = signToken(admin.id, admin.email, 'ADMIN');
   res.json({

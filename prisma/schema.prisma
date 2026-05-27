@@ -7,9 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─────────────────────────────────────────
-// SUPER ADMIN
-// ─────────────────────────────────────────
 model SuperAdmin {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -18,24 +15,73 @@ model SuperAdmin {
   updatedAt    DateTime @updatedAt
 }
 
-// ─────────────────────────────────────────
-// ADMIN (Client / Wedding Couple)
-// ─────────────────────────────────────────
 model Admin {
-  id                String         @id @default(cuid())
-  email             String         @unique
+  id                String          @id @default(cuid())
+  email             String          @unique
   passwordHash      String
   displayName       String
   phone             String?
-  status            AdminStatus    @default(PENDING)
+  status            AdminStatus     @default(PENDING)
   subscriptionStart DateTime?
   subscriptionEnd   DateTime?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
   wedding           WeddingDetails?
 
   @@index([status])
+}
+
+model WeddingDetails {
+  id            String     @id @default(cuid())
+  adminId       String     @unique
+  brideName     String
+  groomName     String
+  weddingDate   DateTime
+  weddingSlug   String     @unique
+  loveStory     String?
+  coverPhotoUrl String?
+  heroPhotoUrl  String?
+  galleryUrls   String[]   @default([])
+  venueName     String?
+  venueAddress  String?
+  venueMapsUrl  String?
+  bridePhone    String?
+  groomPhone    String?
+  timeline      Json       @default("[]")
+  musicUrl      String?
+  musicType     MusicType?
+  primaryColor  String     @default("#c0b258")
+  accentColor   String     @default("#333333")
+  fontFamily    String     @default("Playfair Display")
+  isPublished   Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  guests        Guest[]
+  admin         Admin      @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([weddingSlug])
+}
+
+model Guest {
+  id              String         @id @default(cuid())
+  weddingId       String
+  title           GuestTitle
+  firstName       String
+  lastName        String
+  phone           String?
+  maxAttendants   Int            @default(1)
+  token           String         @unique @default(cuid())
+  rsvpStatus      RsvpStatus     @default(PENDING)
+  attendingCount  Int?
+  dietaryNotes    String?
+  notes           String?
+  rsvpSubmittedAt DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  wedding         WeddingDetails @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+
+  @@index([weddingId, rsvpStatus])
+  @@index([token])
 }
 
 enum AdminStatus {
@@ -45,95 +91,9 @@ enum AdminStatus {
   EXPIRED
 }
 
-// ─────────────────────────────────────────
-// WEDDING DETAILS (1-to-1 with Admin)
-// ─────────────────────────────────────────
-model WeddingDetails {
-  id             String    @id @default(cuid())
-  adminId        String    @unique
-  admin          Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
-
-  // Core Identity
-  brideName      String
-  groomName      String
-  weddingDate    DateTime
-  weddingSlug    String    @unique // e.g. "hiruni-lakshitha"
-
-  // Content
-  loveStory      String?   @db.Text
-  coverPhotoUrl  String?   // S3 key / CDN URL
-  heroPhotoUrl   String?   // S3 key / CDN URL
-  galleryUrls    String[]  @default([])
-
-  // Venue
-  venueName      String?
-  venueAddress   String?
-  venueMapsUrl   String?   // Google Maps embed/link
-
-  // Contacts
-  bridePhone     String?   // E.164 format: +94765599166
-  groomPhone     String?
-
-  // Timeline: [{ time: "08:30 AM", title: "Welcoming Guests", description: "...", icon?: "..." }]
-  timeline       Json      @default("[]")
-
-  // Music / Ambiance
-  musicUrl       String?
-  musicType      MusicType?
-
-  // Theme / Customization
-  primaryColor   String    @default("#c0b258")
-  accentColor    String    @default("#333333")
-  fontFamily     String    @default("Playfair Display")
-
-  // State
-  isPublished    Boolean   @default(false)
-
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  guests         Guest[]
-
-  @@index([weddingSlug])
-}
-
 enum MusicType {
   SPOTIFY
   UPLOAD
-}
-
-// ─────────────────────────────────────────
-// GUEST
-// ─────────────────────────────────────────
-model Guest {
-  id              String         @id @default(cuid())
-  weddingId       String
-  wedding         WeddingDetails @relation(fields: [weddingId], references: [id], onDelete: Cascade)
-
-  // Identity
-  title           GuestTitle
-  firstName       String
-  lastName        String
-  phone           String?        // E.164 format for WhatsApp links
-
-  // RSVP Configuration
-  maxAttendants   Int            @default(1)
-
-  // Unique Invitation Token (used in /invite/:token URL)
-  token           String         @unique @default(cuid())
-
-  // RSVP Response
-  rsvpStatus      RsvpStatus     @default(PENDING)
-  attendingCount  Int?
-  dietaryNotes    String?
-  notes           String?
-  rsvpSubmittedAt DateTime?
-
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-
-  @@index([weddingId, rsvpStatus])
-  @@index([token])
 }
 
 enum GuestTitle {
