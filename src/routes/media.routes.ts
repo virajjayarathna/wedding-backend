@@ -24,7 +24,9 @@ const s3Client = new S3Client({
 router.get('/{*key}', async (req: Request, res: Response) => {
   // req.params.key contains the full path after /v1/media/
   // e.g. "assets/weddings/abc/cover/1234-abc.jpg"
-  const key = (req.params as Record<string, string>).key;
+  // {*key} wildcard captures path segments as a string array — join to get the S3 key
+  const rawKey = (req.params as Record<string, string | string[]>).key;
+  const key = (Array.isArray(rawKey) ? rawKey.join('/') : (rawKey || '')).replace(/^\/+/, '');
 
   if (!key) {
     res.status(400).json({ success: false, message: 'Missing S3 key' });
@@ -47,6 +49,10 @@ router.get('/{*key}', async (req: Request, res: Response) => {
       res.setHeader('Content-Length', s3Response.ContentLength);
     }
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    // Allow cross-origin image embedding (img tags on admin & client frontends).
+    // Helmet sets CORP: same-origin by default — override it here for media.
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 
     // Stream the S3 body to the client
     if (s3Response.Body instanceof Readable) {
