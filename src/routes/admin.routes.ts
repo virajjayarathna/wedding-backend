@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { asyncHandler } from '../utils/asyncHandler';
 import { validateJwt, requireRole } from '../middleware/auth.middleware';
 import { checkSubscription } from '../middleware/subscription.middleware';
@@ -6,7 +7,7 @@ import {
   getWedding,
   upsertWedding,
   updateTimeline,
-  getUploadUrl,
+  uploadPhoto,
   deleteGalleryPhoto,
   togglePublish,
 } from '../controllers/wedding.controller';
@@ -23,6 +24,11 @@ import {
   downloadCsvTemplate,
 } from '../controllers/guest.controller';
 
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+});
+
 const router = Router();
 
 // All admin routes require valid JWT + active subscription
@@ -32,7 +38,7 @@ router.use(validateJwt, requireRole('ADMIN'), checkSubscription);
 router.get('/wedding', asyncHandler(getWedding));
 router.put('/wedding', asyncHandler(upsertWedding));
 router.patch('/wedding/timeline', asyncHandler(updateTimeline));
-router.post('/wedding/upload-url', asyncHandler(getUploadUrl));
+router.post('/wedding/upload', upload.single('file'), asyncHandler(uploadPhoto));
 router.delete('/wedding/gallery/:key', asyncHandler(deleteGalleryPhoto));
 router.patch('/wedding/publish', asyncHandler(togglePublish));
 

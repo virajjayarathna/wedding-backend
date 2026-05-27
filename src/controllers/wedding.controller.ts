@@ -3,7 +3,7 @@ import { z } from 'zod';
 import prisma from '../lib/prisma';
 import { ApiError } from '../utils/ApiError';
 import {
-  getPresignedUploadUrl,
+  uploadFileToS3,
   deleteS3Object,
   extractKeyFromUrl,
   AllowedMimeType,
@@ -51,17 +51,8 @@ const timelineSchema = z.array(
   })
 );
 
-const uploadUrlSchema = z.object({
-  fileType: z.enum([
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'audio/mpeg',
-    'audio/mp3',
-    'audio/ogg',
-  ]),
-  purpose: z.enum(['cover', 'hero', 'gallery', 'audio']),
-});
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'audio/mpeg', 'audio/mp3', 'audio/ogg'] as const;
+const ALLOWED_PURPOSES = ['cover', 'hero', 'gallery', 'audio'] as const;
 
 // ─── Controllers ───────────────────────────────────────────────────────────────
 
@@ -123,27 +114,38 @@ export async function updateTimeline(req: Request, res: Response) {
 }
 
 /**
- * Returns a presigned S3 URL so the frontend can upload directly to S3.
- * After the upload, the frontend should save the returned `publicUrl` via PUT /admin/wedding.
+ * Accepts a multipart file upload, streams it to S3 server-side, then saves
+ * the public URL into the wedding record. No browser-to-S3 CORS required.
  */
-export async function getUploadUrl(req: Request, res: Response) {
-  const { fileType, purpose } = uploadUrlSchema.parse(req.body);
+export async function uploadPhoto(req: Request, res: Response) {
+  const file = req.file;
+  if (!file) throw ApiError.badRequest('No file provided');
 
-  const { uploadUrl, publicUrl, key } = await getPresignedUploadUrl(
+  const purpose = req.body.purpose as string;
+  if (!ALLOWED_PURPOSES.includes(purpose as typeof ALLOWED_PURPOSES[number])) {
+    throw ApiError.badRequest('Invalid purpose. Must be one of: cover, hero, gallery, audio');
+  }
+  if (!ALLOWED_MIME_TYPES.includes(file.mimetype as typeof ALLOWED_MIME_TYPES[number])) {
+    throw ApiError.badRequest('Invalid file type. Allowed: JPEG, PNG, WebP, MP3, OGG');
+  }
+
+  const { publicUrl } = await uploadFileToS3(
     req.user!.id,
     purpose as UploadPurpose,
-    fileType as AllowedMimeType
+    file.mimetype as AllowedMimeType,
+    file.buffer
   );
 
-  res.json({
-    success: true,
-    data: {
-      uploadUrl,   // PUT to this URL with the file binary
-      publicUrl,   // Save this URL in the wedding record after upload
-      key,         // S3 key (for future deletion)
-      expiresIn: 900, // seconds
-    },
-  });
+  // Save URL into the wedding record immediately
+  const field = purpose === 'cover' ? 'coverPhotoUrl' : purpose === 'hero' ? 'heroPhotoUrl' : null;
+  if (field) {
+    await prisma.weddingDetails.updateMany({
+      where: { adminId: req.user!.id },
+      data: { [field]: publicUrl },
+    });
+  }
+
+  res.json({ success: true, data: { publicUrl } });
 }
 
 /**

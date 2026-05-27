@@ -8,12 +8,17 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { config } from '../config/env';
 
 // ─── S3 Client Singleton ───────────────────────────────────────────────────────
+// requestChecksumCalculation: 'WHEN_REQUIRED' disables the SDK v3 default
+// behaviour of auto-adding CRC32 checksums to presigned PUT URLs. Without this,
+// the generated URL contains x-amz-checksum-crc32 & x-amz-sdk-checksum-algorithm
+// params that the browser fetch() won't satisfy, causing S3 to reject the upload.
 const s3Client = new S3Client({
   region: config.aws.region,
   credentials: {
     accessKeyId: config.aws.accessKeyId,
     secretAccessKey: config.aws.secretAccessKey,
   },
+  requestChecksumCalculation: 'WHEN_REQUIRED',
 });
 
 export type UploadPurpose = 'cover' | 'hero' | 'gallery' | 'audio';
@@ -50,6 +55,33 @@ export function buildS3Key(adminId: string, purpose: UploadPurpose, mimeType: st
  */
 export function buildPublicUrl(key: string): string {
   return `${config.aws.cdnBaseUrl}/${key}`;
+}
+
+/**
+ * Upload a file buffer directly to S3 from the backend (avoids browser CORS).
+ *
+ * @returns { publicUrl, key }
+ */
+export async function uploadFileToS3(
+  adminId: string,
+  purpose: UploadPurpose,
+  mimeType: AllowedMimeType,
+  buffer: Buffer
+): Promise<{ publicUrl: string; key: string }> {
+  const key = buildS3Key(adminId, purpose, mimeType);
+
+  const command = new PutObjectCommand({
+    Bucket: config.aws.s3Bucket,
+    Key: key,
+    Body: buffer,
+    ContentType: mimeType,
+    CacheControl: 'max-age=31536000',
+  });
+
+  await s3Client.send(command);
+
+  const publicUrl = buildPublicUrl(key);
+  return { publicUrl, key };
 }
 
 /**
