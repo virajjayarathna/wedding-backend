@@ -103,7 +103,7 @@ export async function generateInvitationPdf(
       height: 1040px;
       background: #FFFFFF;
       border: 1px solid ${accentColor};
-      padding: 40px 50px;
+      padding: 25px 40px;
       text-align: center;
       position: relative;
       display: flex;
@@ -136,15 +136,15 @@ export async function generateInvitationPdf(
 
     .logo-container {
       margin-bottom: 25px;
-      height: 120px;
+      height: 250px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .logo-container img {
-      max-height: 120px;
-      max-width: 180px;
+      max-height: 250px;
+      max-width: 350px;
       object-fit: contain;
     }
 
@@ -154,8 +154,8 @@ export async function generateInvitationPdf(
       letter-spacing: 2px;
       text-transform: uppercase;
       color: #333333;
-      margin-bottom: 15px;
-      line-height: 2;
+      margin-bottom: 10px;
+      line-height: 1.8;
     }
 
     .together-with {
@@ -174,12 +174,12 @@ export async function generateInvitationPdf(
       color: #333333;
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin: 10px 0;
+      margin: 10px 0 15px;
     }
 
     .invite-guest {
       font-family: 'Playfair Display', serif;
-      font-size: 20px;
+      font-size: 18px;
       color: #333333;
       margin: 15px 0;
       padding: 15px 40px;
@@ -189,10 +189,10 @@ export async function generateInvitationPdf(
 
     .couple-names {
       font-family: '${wedding.pdfFont}', cursive;
-      font-size: 48px;
+      font-size: 52px;
       color: ${primaryColor};
       line-height: 1.2;
-      margin: 10px 0;
+      margin: 20px 0;
       padding: 0 10px;
     }
 
@@ -202,7 +202,7 @@ export async function generateInvitationPdf(
       color: #333333;
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
       line-height: 1.8;
     }
 
@@ -212,7 +212,7 @@ export async function generateInvitationPdf(
       letter-spacing: 3px;
       text-transform: uppercase;
       color: #333333;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       line-height: 1.8;
     }
 
@@ -222,7 +222,7 @@ export async function generateInvitationPdf(
       color: #333333;
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       line-height: 1.8;
     }
 
@@ -242,7 +242,8 @@ export async function generateInvitationPdf(
       color: #333333;
       letter-spacing: 1px;
       text-transform: uppercase;
-      line-height: 2;
+      line-height: 1.8;
+      margin-bottom: 10px;
     }
 
     .rsvp {
@@ -250,8 +251,7 @@ export async function generateInvitationPdf(
       font-size: 12px;
       letter-spacing: 2px;
       color: #333333;
-      margin-top: auto;
-      padding-top: 25px;
+      margin-top: 25px;
       line-height: 2;
     }
 
