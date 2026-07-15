@@ -229,6 +229,12 @@ export async function generateInvitePdf(req: Request, res: Response) {
       pdfCeremonyName: weddingDetails.pdfCeremonyName,
       pdfCeremonyTime: weddingDetails.pdfCeremonyTime,
       rsvpDeadline: weddingDetails.rsvpDeadline,
+      brideFatherName: weddingDetails.brideFatherName,
+      groomFatherName: weddingDetails.groomFatherName,
+      brideFatherPhone: weddingDetails.brideFatherPhone,
+      groomFatherPhone: weddingDetails.groomFatherPhone,
+      bridePhone: weddingDetails.bridePhone,
+      groomPhone: weddingDetails.groomPhone,
     },
     {
       title: guest.title,

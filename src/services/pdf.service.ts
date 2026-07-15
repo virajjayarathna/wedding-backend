@@ -57,12 +57,19 @@ export async function generateInvitationPdf(
   }
 
   const isFamily = guest.title === 'FAMILY';
+  let guestPrefix = '';
+  if (guest.title === 'FAMILY') guestPrefix = 'FAMILY';
+  else if (guest.title === 'MR') guestPrefix = 'MR.';
+  else if (guest.title === 'MRS') guestPrefix = 'MRS.';
+  else if (guest.title === 'MS') guestPrefix = 'MS.';
+  else guestPrefix = TITLE_MAP[guest.title] || '';
+
   const guestName = isFamily
-    ? `${TITLE_MAP[guest.title] || ''} ${guest.lastName} Family`
-    : `${TITLE_MAP[guest.title] || ''} ${guest.firstName} ${guest.lastName}`;
+    ? `${guestPrefix} ${guest.lastName}`
+    : `${guestPrefix} ${guest.firstName} ${guest.lastName}`;
 
   const weddingDate = new Date(wedding.weddingDate);
-  const formattedDate = format(weddingDate, 'MMMM do, yyyy');
+  const formattedDate = format(weddingDate, 'MMMM | dd | yyyy').toUpperCase();
   const rsvpDate = new Date(wedding.rsvpDeadline);
   const formattedRsvpDate = format(rsvpDate, 'MMMM do, yyyy');
 
@@ -83,7 +90,7 @@ export async function generateInvitationPdf(
       width: 794px;
       height: 1123px;
       background: #FFFFFF;
-      font-family: 'Montserrat', sans-serif;
+      font-family: 'Playfair Display', serif;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -96,7 +103,7 @@ export async function generateInvitationPdf(
       height: 1040px;
       background: #FFFFFF;
       border: 1px solid ${accentColor};
-      padding: 50px 60px;
+      padding: 40px 50px;
       text-align: center;
       position: relative;
       display: flex;
@@ -128,133 +135,135 @@ export async function generateInvitationPdf(
     }
 
     .logo-container {
-      margin-bottom: 30px;
-      height: 80px;
+      margin-bottom: 25px;
+      height: 120px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .logo-container img {
-      max-height: 80px;
-      max-width: 120px;
+      max-height: 120px;
+      max-width: 180px;
       object-fit: contain;
     }
 
-    .top-text {
-      font-family: 'Montserrat', sans-serif;
-      font-size: 11px;
-      font-weight: 400;
-      letter-spacing: 5px;
+    .fathers-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      letter-spacing: 2px;
       text-transform: uppercase;
-      color: #666666;
-      margin-bottom: 35px;
+      color: #333333;
+      margin-bottom: 15px;
       line-height: 2;
     }
 
-    .couple-names {
-      font-family: '${wedding.pdfFont}', cursive;
-      font-size: 64px;
-      color: ${primaryColor};
-      line-height: 1.1;
-      margin-bottom: 35px;
-      padding: 0 20px;
+    .together-with {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      color: #333333;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      display: inline-block;
+      margin: 5px 0;
+    }
+
+    .request-honor {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      color: #333333;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 10px 0;
     }
 
     .invite-guest {
       font-family: 'Playfair Display', serif;
-      font-size: 24px;
-      font-weight: 600;
+      font-size: 20px;
       color: #333333;
-      margin: 25px 0;
+      margin: 15px 0;
       padding: 15px 40px;
       border-top: 1px solid ${accentColor};
       border-bottom: 1px solid ${accentColor};
     }
 
-    .day-date {
-      font-family: 'Montserrat', sans-serif;
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      color: #4A4A4A;
-      margin-bottom: 30px;
+    .couple-names {
+      font-family: '${wedding.pdfFont}', cursive;
+      font-size: 48px;
+      color: ${primaryColor};
+      line-height: 1.2;
+      margin: 10px 0;
+      padding: 0 10px;
     }
 
-    .events-grid {
-      display: flex;
-      width: 100%;
-      justify-content: space-between;
-      margin: 30px 0;
-      padding: 0 40px;
-    }
-
-    .event-block {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .event-divider {
-      width: 1px;
-      background-color: ${accentColor};
-      margin: 0 30px;
-    }
-
-    .event-name {
+    .celebrate-text {
       font-family: 'Playfair Display', serif;
-      font-size: 16px;
-      font-weight: 600;
-      color: #333333;
-      margin-bottom: 10px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-    }
-
-    .event-time {
-      font-family: 'Montserrat', sans-serif;
       font-size: 12px;
-      color: #666666;
-      letter-spacing: 2px;
+      color: #333333;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+      line-height: 1.8;
     }
 
-    .venue-section {
-      margin-top: 20px;
-      margin-bottom: 40px;
+    .day-date {
+      font-family: 'Playfair Display', serif;
+      font-size: 14px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #333333;
+      margin-bottom: 20px;
+      line-height: 1.8;
+    }
+
+    .at-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      color: #333333;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+      line-height: 1.8;
     }
 
     .venue-name {
       font-family: 'Playfair Display', serif;
       font-size: 18px;
-      font-weight: 600;
       color: #333333;
-      margin-bottom: 8px;
-      letter-spacing: 1px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      display: block;
+      margin-top: 5px;
     }
 
-    .venue-address {
-      font-family: 'Montserrat', sans-serif;
+    .time-text {
+      font-family: 'Playfair Display', serif;
       font-size: 12px;
-      color: #666666;
-      line-height: 1.6;
+      color: #333333;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      line-height: 2;
     }
 
     .rsvp {
-      font-family: 'Montserrat', sans-serif;
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: #888888;
+      font-family: 'Playfair Display', serif;
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: #333333;
       margin-top: auto;
-      padding-top: 30px;
+      padding-top: 25px;
+      line-height: 2;
     }
 
     .rsvp-date {
-      color: ${primaryColor};
-      font-weight: 600;
+      color: #333333;
+    }
+
+    .rsvp-contacts {
+      margin-top: 10px;
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: #333333;
     }
   </style>
 </head>
@@ -262,46 +271,50 @@ export async function generateInvitationPdf(
   <div class="card">
     ${wedding.pdfLogoUrl ? `<div class="logo-container"><img src="${wedding.pdfLogoUrl}" alt="Logo" /></div>` : ''}
     
-    <div class="top-text">
-      Together with their families<br>
-      invite you to celebrate the wedding of
+    <div class="fathers-text">
+      MR. &amp; MRS. ${escapeHtml((wedding.brideFatherName || '').toUpperCase())}<br>
+      <span class="together-with">TOGETHER WITH</span><br>
+      MR. &amp; MRS. ${escapeHtml((wedding.groomFatherName || '').toUpperCase())}
     </div>
 
-    <div class="couple-names">
-      ${escapeHtml(wedding.brideName)}<br>
-      <span style="font-size: 40px; font-family: 'Playfair Display', serif; color: #4A4A4A;">&amp;</span><br>
-      ${escapeHtml(wedding.groomName)}
+    <div class="request-honor">
+      REQUEST THE HONOUR OF THE PRESENCE OF
     </div>
 
     <div class="invite-guest">
-      ${escapeHtml(guestName)}
+      ${escapeHtml(guestName).toUpperCase()}
+    </div>
+
+    <div class="celebrate-text">
+      TO CELEBRATE THE WEDDING OF THEIR DAUGHTER &amp; SON
+    </div>
+
+    <div class="couple-names">
+      ${escapeHtml(wedding.brideName)} &amp; ${escapeHtml(wedding.groomName)}
     </div>
 
     <div class="day-date">
-      ${escapeHtml(wedding.pdfWeddingDay)} | ${escapeHtml(formattedDate)}
+      ON<br>
+      ${escapeHtml(wedding.pdfWeddingDay?.toUpperCase() || '')}<br>
+      ${escapeHtml(formattedDate)}
     </div>
 
-    <div class="events-grid">
-      <div class="event-block">
-        <div class="event-name">${escapeHtml(wedding.pdfCeremonyName)}</div>
-        <div class="event-time">${escapeHtml(wedding.pdfCeremonyTime)}</div>
-      </div>
-      <div class="event-divider"></div>
-      <div class="event-block">
-        <div class="event-name">Reception</div>
-        <div class="event-time">${escapeHtml(wedding.pdfStartTime)} - ${escapeHtml(wedding.pdfEndTime)}</div>
-      </div>
+    <div class="at-text">
+      AT<br>
+      <span class="venue-name">${escapeHtml(wedding.venueName)}</span>
     </div>
 
-    ${wedding.venueName ? `
-    <div class="venue-section">
-      <div class="venue-name">${escapeHtml(wedding.venueName)}</div>
-      ${wedding.venueAddress ? `<div class="venue-address">${escapeHtml(wedding.venueAddress)}</div>` : ''}
+    <div class="time-text">
+      FROM ${escapeHtml(format12Hour(wedding.pdfStartTime))} TO ${escapeHtml(format12Hour(wedding.pdfEndTime))}<br>
+      ${escapeHtml(wedding.pdfCeremonyName)} @ ${escapeHtml(format12Hour(wedding.pdfCeremonyTime))}
     </div>
-    ` : ''}
 
     <div class="rsvp">
-      Kindly RSVP by <span class="rsvp-date">${escapeHtml(formattedRsvpDate)}</span>
+      RSVP before <span class="rsvp-date">${escapeHtml(formattedRsvpDate)}</span><br>
+      <div class="rsvp-contacts">
+        ${escapeHtml(wedding.brideFatherName || wedding.brideName)} - ${escapeHtml(wedding.brideFatherPhone || wedding.bridePhone)}<br>
+        ${escapeHtml(wedding.groomFatherName || wedding.groomName)} - ${escapeHtml(wedding.groomFatherPhone || wedding.groomPhone)}
+      </div>
     </div>
   </div>
 </body>
@@ -345,4 +358,15 @@ function escapeHtml(str: string | null | undefined): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/** Convert HH:MM to 12-hour AM/PM format */
+function format12Hour(timeStr: string | null | undefined): string {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':');
+  if (!h || !m) return timeStr;
+  const hour = parseInt(h, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${m} ${ampm}`;
 }
