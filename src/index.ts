@@ -15,6 +15,7 @@ import inviteRoutes from './routes/invite.routes';
 import mediaRoutes from './routes/media.routes';
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy (Nginx)
 
 // ─────────────────────────────────────────
 // Security Middleware
