@@ -78,9 +78,7 @@ export async function resolveInvite(req: Request, res: Response) {
    */
   function toProxyUrl(url: string | null | undefined): string | null {
     if (!url) return null;
-    // Already a proxy URL
-    if (url.includes('/v1/media/')) return url;
-    // Direct S3 URL — extract key and build proxy URL
+    // Extract key and build proxy URL using current environment variables
     const key = extractKeyFromUrl(url);
     if (!key) return url; // Unknown format, return as-is
     return `${config.aws.mediaProxyBaseUrl}/v1/media/${key}`;

@@ -150,8 +150,11 @@ export async function deleteS3Object(key: string): Promise<void> {
 export function extractKeyFromUrl(url: string): string | null {
   try {
     const parsed = new URL(url);
-    // Remove leading slash from pathname
-    return parsed.pathname.replace(/^\//, '');
+    let key = parsed.pathname.replace(/^\//, '');
+    if (key.startsWith('v1/media/')) {
+      key = key.substring(9); // strip 'v1/media/' prefix
+    }
+    return key;
   } catch {
     return null;
   }

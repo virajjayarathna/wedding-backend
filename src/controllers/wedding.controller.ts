@@ -80,7 +80,6 @@ export async function getWedding(req: Request, res: Response) {
     // Transform stored S3 URLs to proxy URLs for backward compatibility
     const toProxyUrl = (url: string | null | undefined): string | null => {
       if (!url) return null;
-      if (url.includes('/v1/media/')) return url; // already proxied
       const key = extractKeyFromUrl(url);
       if (!key) return url;
       return `${config.aws.mediaProxyBaseUrl}/v1/media/${key}`;
