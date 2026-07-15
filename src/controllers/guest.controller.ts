@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { createId } from '@paralleldrive/cuid2';
+import { randomUUID } from 'crypto';
 import prisma from '../lib/prisma';
 import { ApiError } from '../utils/ApiError';
 import { config } from '../config/env';
@@ -243,7 +243,7 @@ export async function regenerateToken(req: Request, res: Response) {
   let newToken: string;
   let attempts = 0;
   do {
-    newToken = createId();
+    newToken = randomUUID();
     attempts++;
     if (attempts > 10) throw ApiError.internal('Failed to generate unique token');
   } while (await prisma.guest.findUnique({ where: { token: newToken } }));
