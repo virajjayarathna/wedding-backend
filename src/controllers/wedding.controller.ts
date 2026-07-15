@@ -89,6 +89,7 @@ export async function getWedding(req: Request, res: Response) {
       coverPhotoUrl: toProxyUrl(wedding.coverPhotoUrl),
       heroPhotoUrl: toProxyUrl(wedding.heroPhotoUrl),
       galleryUrls: wedding.galleryUrls.map((u) => toProxyUrl(u) ?? u),
+      musicUrl: toProxyUrl(wedding.musicUrl),
     };
     return res.json({ success: true, data: withProxied });
   }

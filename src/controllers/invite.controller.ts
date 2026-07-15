@@ -119,7 +119,7 @@ export async function resolveInvite(req: Request, res: Response) {
         groomFatherName: weddingDetails.groomFatherName,
         groomFatherPhone: weddingDetails.groomFatherPhone,
         timeline: weddingDetails.timeline,
-        musicUrl: weddingDetails.musicUrl,
+        musicUrl: toProxyUrl(weddingDetails.musicUrl),
         musicType: weddingDetails.musicType,
         primaryColor: weddingDetails.primaryColor,
         accentColor: weddingDetails.accentColor,
