@@ -21,7 +21,7 @@ const s3Client = new S3Client({
   requestChecksumCalculation: 'WHEN_REQUIRED',
 });
 
-export type UploadPurpose = 'cover' | 'hero' | 'gallery' | 'audio';
+export type UploadPurpose = 'cover' | 'hero' | 'gallery' | 'audio' | 'logo';
 export type AllowedMimeType =
   | 'image/jpeg'
   | 'image/png'

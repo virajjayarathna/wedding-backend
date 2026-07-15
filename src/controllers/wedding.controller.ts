@@ -46,6 +46,14 @@ const upsertWeddingSchema = z.object({
     .regex(/^#[0-9A-Fa-f]{6}$/)
     .optional(),
   fontFamily: z.string().optional(),
+  pdfLogoUrl: z.string().optional().nullable(),
+  pdfFont: z.string().optional(),
+  pdfWeddingDay: z.string().optional(),
+  pdfStartTime: z.string().optional(),
+  pdfEndTime: z.string().optional(),
+  pdfCeremonyName: z.string().optional(),
+  pdfCeremonyTime: z.string().optional(),
+  rsvpDeadline: z.string().datetime({ offset: true }).optional().nullable(),
 });
 
 const timelineSchema = z.array(
@@ -58,7 +66,7 @@ const timelineSchema = z.array(
 );
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'audio/mpeg', 'audio/mp3', 'audio/ogg'] as const;
-const ALLOWED_PURPOSES = ['cover', 'hero', 'gallery', 'audio'] as const;
+const ALLOWED_PURPOSES = ['cover', 'hero', 'gallery', 'audio', 'logo'] as const;
 
 // ─── Controllers ───────────────────────────────────────────────────────────────
 
@@ -162,8 +170,11 @@ export async function uploadPhoto(req: Request, res: Response) {
   );
 
   // Save URL into the wedding record based on purpose
-  if (purpose === 'cover' || purpose === 'hero') {
-    const field = purpose === 'cover' ? 'coverPhotoUrl' : 'heroPhotoUrl';
+  if (purpose === 'cover' || purpose === 'hero' || purpose === 'logo') {
+    let field: string;
+    if (purpose === 'cover') field = 'coverPhotoUrl';
+    else if (purpose === 'hero') field = 'heroPhotoUrl';
+    else field = 'pdfLogoUrl';
     // Fetch the current URL so we can delete the old S3 object
     const existing = await prisma.weddingDetails.findUnique({
       where: { adminId: req.user!.id },

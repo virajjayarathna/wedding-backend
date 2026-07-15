@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer';
 import { format } from 'date-fns';
+import { ApiError } from '../utils/ApiError';
 
 interface PdfWeddingData {
   brideName: string;
@@ -9,6 +10,14 @@ interface PdfWeddingData {
   venueAddress?: string | null;
   primaryColor?: string;
   accentColor?: string;
+  pdfLogoUrl?: string | null;
+  pdfFont?: string | null;
+  pdfWeddingDay?: string | null;
+  pdfStartTime?: string | null;
+  pdfEndTime?: string | null;
+  pdfCeremonyName?: string | null;
+  pdfCeremonyTime?: string | null;
+  rsvpDeadline?: string | Date | null;
 }
 
 interface PdfGuestData {
@@ -34,17 +43,31 @@ export async function generateInvitationPdf(
   wedding: PdfWeddingData,
   guest: PdfGuestData
 ): Promise<Buffer> {
+  // Validate mandatory fields
+  if (
+    !wedding.pdfFont ||
+    !wedding.pdfWeddingDay ||
+    !wedding.pdfStartTime ||
+    !wedding.pdfEndTime ||
+    !wedding.pdfCeremonyName ||
+    !wedding.pdfCeremonyTime ||
+    !wedding.rsvpDeadline
+  ) {
+    throw ApiError.badRequest('Incomplete PDF configuration. Please ensure all mandatory fields are filled out in the PDF tab.');
+  }
+
   const isFamily = guest.title === 'FAMILY';
   const guestName = isFamily
     ? `${TITLE_MAP[guest.title] || ''} ${guest.lastName} Family`
     : `${TITLE_MAP[guest.title] || ''} ${guest.firstName} ${guest.lastName}`;
 
   const weddingDate = new Date(wedding.weddingDate);
-  const formattedDate = format(weddingDate, 'EEEE, MMMM do, yyyy');
-  const formattedTime = format(weddingDate, 'h:mm a');
+  const formattedDate = format(weddingDate, 'MMMM do, yyyy');
+  const rsvpDate = new Date(wedding.rsvpDeadline);
+  const formattedRsvpDate = format(rsvpDate, 'MMMM do, yyyy');
 
-  const primaryColor = wedding.primaryColor || '#D4AF37';
-  const accentColor = wedding.accentColor || '#E6D5B8';
+  const primaryColor = wedding.primaryColor || '#C5A059'; // Default Gold
+  const accentColor = wedding.accentColor || '#E8E8E8'; // Default Grey
 
   const html = `
 <!DOCTYPE html>
@@ -52,14 +75,14 @@ export async function generateInvitationPdf(
 <head>
   <meta charset="UTF-8">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600&family=Great+Vibes&family=Alex+Brush&family=Dancing+Script&family=Pinyon+Script&display=swap');
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       width: 794px;
       height: 1123px;
-      background: linear-gradient(135deg, #FDFBF7 0%, #F8F4EC 100%);
+      background: #FFFFFF;
       font-family: 'Montserrat', sans-serif;
       display: flex;
       align-items: center;
@@ -69,179 +92,217 @@ export async function generateInvitationPdf(
     }
 
     .card {
-      width: 650px;
+      width: 710px;
+      height: 1040px;
       background: #FFFFFF;
-      border: 2px solid ${primaryColor};
-      box-shadow: inset 0 0 0 6px #FFFFFF, inset 0 0 0 7px ${primaryColor};
-      padding: 60px 50px;
+      border: 1px solid ${accentColor};
+      padding: 50px 60px;
       text-align: center;
       position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
     .card::before {
       content: '';
       position: absolute;
-      top: 12px;
-      left: 12px;
-      right: 12px;
-      bottom: 12px;
+      top: 15px;
+      left: 15px;
+      right: 15px;
+      bottom: 15px;
+      border: 2px solid ${primaryColor};
+      pointer-events: none;
+    }
+
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 22px;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
       border: 1px solid ${accentColor};
       pointer-events: none;
     }
 
-    .ornament {
-      color: ${primaryColor};
-      font-size: 28px;
-      letter-spacing: 8px;
-      margin-bottom: 20px;
+    .logo-container {
+      margin-bottom: 30px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .invite-text {
+    .logo-container img {
+      max-height: 80px;
+      max-width: 120px;
+      object-fit: contain;
+    }
+
+    .top-text {
       font-family: 'Montserrat', sans-serif;
       font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      color: #8C7863;
-      margin-bottom: 8px;
-    }
-
-    .guest-name {
-      font-family: 'Playfair Display', serif;
-      font-size: 22px;
-      font-weight: 600;
-      color: #333230;
-      margin-bottom: 30px;
-    }
-
-    .divider {
-      width: 80px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, ${primaryColor}, transparent);
-      margin: 0 auto 30px;
-    }
-
-    .couple-label {
-      font-size: 10px;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: #8C7863;
-      margin-bottom: 12px;
       font-weight: 400;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      color: #666666;
+      margin-bottom: 35px;
+      line-height: 2;
     }
 
     .couple-names {
-      font-family: 'Playfair Display', serif;
-      font-size: 42px;
-      font-weight: 700;
-      color: #333230;
-      line-height: 1.2;
-      margin-bottom: 6px;
-    }
-
-    .ampersand {
+      font-family: '${wedding.pdfFont}', cursive;
+      font-size: 64px;
       color: ${primaryColor};
-      font-style: italic;
-      font-size: 36px;
-      display: inline-block;
-      margin: 0 12px;
-      font-weight: 400;
-    }
-
-    .are-getting-married {
-      font-family: 'Playfair Display', serif;
-      font-style: italic;
-      font-size: 16px;
-      color: ${primaryColor};
+      line-height: 1.1;
       margin-bottom: 35px;
+      padding: 0 20px;
     }
 
-    .details-section {
+    .invite-guest {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: #333333;
+      margin: 25px 0;
+      padding: 15px 40px;
+      border-top: 1px solid ${accentColor};
+      border-bottom: 1px solid ${accentColor};
+    }
+
+    .day-date {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #4A4A4A;
       margin-bottom: 30px;
     }
 
-    .details-label {
-      font-size: 9px;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: #8C7863;
-      margin-bottom: 8px;
-      font-weight: 500;
+    .events-grid {
+      display: flex;
+      width: 100%;
+      justify-content: space-between;
+      margin: 30px 0;
+      padding: 0 40px;
     }
 
-    .details-value {
+    .event-block {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .event-divider {
+      width: 1px;
+      background-color: ${accentColor};
+      margin: 0 30px;
+    }
+
+    .event-name {
       font-family: 'Playfair Display', serif;
       font-size: 16px;
-      color: #333230;
-      font-weight: 500;
-      line-height: 1.5;
-    }
-
-    .details-sub {
-      font-size: 13px;
-      color: #666;
-      font-weight: 300;
-      margin-top: 4px;
-      line-height: 1.4;
-    }
-
-    .footer-ornament {
-      color: ${primaryColor};
-      font-size: 22px;
-      letter-spacing: 6px;
-      margin-top: 20px;
-    }
-
-    .rsvp-note {
-      font-size: 10px;
-      letter-spacing: 2px;
+      font-weight: 600;
+      color: #333333;
+      margin-bottom: 10px;
       text-transform: uppercase;
-      color: #8C7863;
-      margin-top: 25px;
-      font-weight: 400;
+      letter-spacing: 2px;
+    }
+
+    .event-time {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      color: #666666;
+      letter-spacing: 2px;
+    }
+
+    .venue-section {
+      margin-top: 20px;
+      margin-bottom: 40px;
+    }
+
+    .venue-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: #333333;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+
+    .venue-address {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      color: #666666;
+      line-height: 1.6;
+    }
+
+    .rsvp {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #888888;
+      margin-top: auto;
+      padding-top: 30px;
+    }
+
+    .rsvp-date {
+      color: ${primaryColor};
+      font-weight: 600;
     }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="ornament">✦ ✦ ✦</div>
+    ${wedding.pdfLogoUrl ? `<div class="logo-container"><img src="${wedding.pdfLogoUrl}" alt="Logo" /></div>` : ''}
+    
+    <div class="top-text">
+      Together with their families<br>
+      invite you to celebrate the wedding of
+    </div>
 
-    <p class="invite-text">A Special Invitation For</p>
-    <p class="guest-name">${escapeHtml(guestName)}</p>
-
-    <div class="divider"></div>
-
-    <p class="couple-label">Together with their families</p>
-    <p class="couple-names">
-      ${escapeHtml(wedding.brideName)}
-      <span class="ampersand">&amp;</span>
+    <div class="couple-names">
+      ${escapeHtml(wedding.brideName)}<br>
+      <span style="font-size: 40px; font-family: 'Playfair Display', serif; color: #4A4A4A;">&amp;</span><br>
       ${escapeHtml(wedding.groomName)}
-    </p>
-    <p class="are-getting-married">are getting married</p>
-
-    <div class="details-section">
-      <p class="details-label">Date &amp; Time</p>
-      <p class="details-value">${escapeHtml(formattedDate)}</p>
-      <p class="details-sub">${escapeHtml(formattedTime)}</p>
     </div>
 
-    ${
-      wedding.venueName
-        ? `
-    <div class="details-section">
-      <p class="details-label">Venue</p>
-      <p class="details-value">${escapeHtml(wedding.venueName)}</p>
-      ${wedding.venueAddress ? `<p class="details-sub">${escapeHtml(wedding.venueAddress)}</p>` : ''}
+    <div class="invite-guest">
+      ${escapeHtml(guestName)}
     </div>
-    `
-        : ''
-    }
 
-    <div class="divider"></div>
+    <div class="day-date">
+      ${escapeHtml(wedding.pdfWeddingDay)} | ${escapeHtml(formattedDate)}
+    </div>
 
-    <p class="rsvp-note">Kindly respond at your earliest convenience</p>
+    <div class="events-grid">
+      <div class="event-block">
+        <div class="event-name">${escapeHtml(wedding.pdfCeremonyName)}</div>
+        <div class="event-time">${escapeHtml(wedding.pdfCeremonyTime)}</div>
+      </div>
+      <div class="event-divider"></div>
+      <div class="event-block">
+        <div class="event-name">Reception</div>
+        <div class="event-time">${escapeHtml(wedding.pdfStartTime)} - ${escapeHtml(wedding.pdfEndTime)}</div>
+      </div>
+    </div>
 
-    <div class="footer-ornament">✦ ✦ ✦</div>
+    ${wedding.venueName ? `
+    <div class="venue-section">
+      <div class="venue-name">${escapeHtml(wedding.venueName)}</div>
+      ${wedding.venueAddress ? `<div class="venue-address">${escapeHtml(wedding.venueAddress)}</div>` : ''}
+    </div>
+    ` : ''}
+
+    <div class="rsvp">
+      Kindly RSVP by <span class="rsvp-date">${escapeHtml(formattedRsvpDate)}</span>
+    </div>
   </div>
 </body>
 </html>
@@ -255,10 +316,12 @@ export async function generateInvitationPdf(
   try {
     const page = await browser.newPage();
 
-    await page.setContent(html, { waitUntil: 'domcontentloaded' });
+    await page.setContent(html, { waitUntil: 'networkidle0' }); // Wait for logo to load
 
     // Wait for Google Fonts to load via CSS @import
-    await page.waitForFunction('document.fonts.ready');
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
 
     const pdfBuffer = await page.pdf({
       width: '794px',
@@ -267,7 +330,6 @@ export async function generateInvitationPdf(
       margin: { top: '0', right: '0', bottom: '0', left: '0' },
     });
 
-    // Puppeteer returns Uint8Array in newer versions — ensure we return a Node Buffer
     return Buffer.from(pdfBuffer);
   } finally {
     await browser.close();
@@ -275,7 +337,8 @@ export async function generateInvitationPdf(
 }
 
 /** Escape HTML special characters to prevent XSS in the template. */
-function escapeHtml(str: string): string {
+function escapeHtml(str: string | null | undefined): string {
+  if (!str) return '';
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

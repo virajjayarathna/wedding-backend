@@ -57,6 +57,14 @@ model WeddingDetails {
   primaryColor  String     @default("#c0b258")
   accentColor   String     @default("#333333")
   fontFamily    String     @default("Playfair Display")
+  pdfLogoUrl    String?
+  pdfFont       String?
+  pdfWeddingDay String?
+  pdfStartTime  String?
+  pdfEndTime    String?
+  pdfCeremonyName String?
+  pdfCeremonyTime String?
+  rsvpDeadline  DateTime?
   isPublished   Boolean    @default(false)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
