@@ -18,6 +18,12 @@ interface PdfWeddingData {
   pdfCeremonyName?: string | null;
   pdfCeremonyTime?: string | null;
   rsvpDeadline?: string | Date | null;
+  brideFatherName?: string | null;
+  groomFatherName?: string | null;
+  bridePhone?: string | null;
+  groomPhone?: string | null;
+  brideFatherPhone?: string | null;
+  groomFatherPhone?: string | null;
 }
 
 interface PdfGuestData {
@@ -329,10 +335,11 @@ export async function generateInvitationPdf(
   try {
     const page = await browser.newPage();
 
-    await page.setContent(html, { waitUntil: 'networkidle0' }); // Wait for logo to load
+    await page.setContent(html, { waitUntil: 'load' }); // Wait for logo to load
 
     // Wait for Google Fonts to load via CSS @import
     await page.evaluate(async () => {
+      // @ts-ignore
       await document.fonts.ready;
     });
 
