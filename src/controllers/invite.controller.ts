@@ -3,6 +3,7 @@ import { z } from 'zod';
 import prisma from '../lib/prisma';
 import { ApiError } from '../utils/ApiError';
 import { extractKeyFromUrl } from '../services/s3.service';
+import { generateInvitationPdf } from '../services/pdf.service';
 import { config } from '../config/env';
 
 const rsvpSchema = z.object({
@@ -15,10 +16,39 @@ const rsvpSchema = z.object({
 export async function resolveInvite(req: Request, res: Response) {
   const token = req.params.token as string;
 
-  const guest = await prisma.guest.findUnique({
+  let guest = await prisma.guest.findUnique({
     where: { token },
     include: { wedding: true },
   });
+
+  if (!guest) {
+    const weddingBySlug = await prisma.weddingDetails.findUnique({
+      where: { weddingSlug: token },
+    });
+
+    if (weddingBySlug) {
+      guest = {
+        id: 'preview',
+        weddingId: weddingBySlug.id,
+        title: 'MR',
+        firstName: 'Preview',
+        lastName: 'Guest',
+        phone: null,
+        maxAttendants: 2,
+        token: token,
+        rsvpStatus: 'PENDING',
+        attendingCount: null,
+        dietaryNotes: null,
+        notes: null,
+        rsvpSubmittedAt: null,
+        brideRsvpContact: 'BRIDE',
+        groomRsvpContact: 'GROOM',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        wedding: weddingBySlug,
+      } as any;
+    }
+  }
 
   if (!guest) throw ApiError.notFound('This invitation link is invalid or has expired.');
 
@@ -69,6 +99,8 @@ export async function resolveInvite(req: Request, res: Response) {
         attendingCount: guest.attendingCount,
         dietaryNotes: guest.dietaryNotes,
         rsvpSubmittedAt: guest.rsvpSubmittedAt,
+        brideRsvpContact: guest.brideRsvpContact,
+        groomRsvpContact: guest.groomRsvpContact,
       },
       wedding: {
         brideName: weddingDetails.brideName,
@@ -84,6 +116,10 @@ export async function resolveInvite(req: Request, res: Response) {
         venueMapsUrl: weddingDetails.venueMapsUrl,
         bridePhone: weddingDetails.bridePhone,
         groomPhone: weddingDetails.groomPhone,
+        brideFatherName: weddingDetails.brideFatherName,
+        brideFatherPhone: weddingDetails.brideFatherPhone,
+        groomFatherName: weddingDetails.groomFatherName,
+        groomFatherPhone: weddingDetails.groomFatherPhone,
         timeline: weddingDetails.timeline,
         musicUrl: weddingDetails.musicUrl,
         musicType: weddingDetails.musicType,
@@ -104,7 +140,14 @@ export async function submitRsvp(req: Request, res: Response) {
     include: { wedding: { select: { isPublished: true } } },
   });
 
-  if (!guest) throw ApiError.notFound('Invalid invitation token.');
+  if (!guest) {
+    const isPreview = await prisma.weddingDetails.findUnique({ where: { weddingSlug: token } });
+    if (isPreview) {
+      throw ApiError.badRequest('This is a preview link. RSVPs cannot be submitted here.');
+    }
+    throw ApiError.notFound('Invalid invitation token.');
+  }
+
   if (!guest.wedding.isPublished) throw ApiError.forbidden('This invitation is not active.');
 
   // Validate attending count against max
@@ -134,4 +177,64 @@ export async function submitRsvp(req: Request, res: Response) {
   });
 
   res.json({ success: true, data: updated, message: 'RSVP submitted successfully!' });
+}
+
+/**
+ * Generate a PDF invitation card for a specific guest.
+ * GET /invite/:token/pdf
+ */
+export async function generateInvitePdf(req: Request, res: Response) {
+  const token = req.params.token as string;
+
+  const guest = await prisma.guest.findUnique({
+    where: { token },
+    include: { wedding: true },
+  });
+
+  if (!guest) throw ApiError.notFound('Invalid invitation token.');
+
+  const weddingDetails = guest.wedding;
+
+  if (!weddingDetails.isPublished) {
+    throw ApiError.notFound('This invitation is not yet available.');
+  }
+
+  // Check admin subscription
+  const admin = await prisma.admin.findUnique({
+    where: { id: weddingDetails.adminId },
+    select: { status: true, subscriptionEnd: true },
+  });
+
+  if (!admin || admin.status !== 'ACTIVE') {
+    throw ApiError.notFound('This invitation link is no longer active.');
+  }
+  if (admin.subscriptionEnd && admin.subscriptionEnd < new Date()) {
+    throw ApiError.notFound('This invitation link is no longer active.');
+  }
+
+  const pdfBuffer = await generateInvitationPdf(
+    {
+      brideName: weddingDetails.brideName,
+      groomName: weddingDetails.groomName,
+      weddingDate: weddingDetails.weddingDate,
+      venueName: weddingDetails.venueName,
+      venueAddress: weddingDetails.venueAddress,
+      primaryColor: weddingDetails.primaryColor,
+      accentColor: weddingDetails.accentColor,
+    },
+    {
+      title: guest.title,
+      firstName: guest.firstName,
+      lastName: guest.lastName,
+    }
+  );
+
+  const filename = `invitation-${weddingDetails.brideName}-${weddingDetails.groomName}.pdf`
+    .toLowerCase()
+    .replace(/[^a-z0-9.-]/g, '-');
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Length', pdfBuffer.length);
+  res.send(pdfBuffer);
 }

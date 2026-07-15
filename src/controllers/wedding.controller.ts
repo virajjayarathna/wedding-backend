@@ -9,6 +9,7 @@ import {
   extractKeyFromUrl,
   AllowedMimeType,
   UploadPurpose,
+  buildPublicUrl,
 } from '../services/s3.service';
 
 // ─── Validation Schemas ────────────────────────────────────────────────────────
@@ -30,6 +31,10 @@ const upsertWeddingSchema = z.object({
   venueMapsUrl: z.string().optional().nullable(),
   bridePhone: z.string().optional(),
   groomPhone: z.string().optional(),
+  brideFatherName: z.string().optional().nullable(),
+  brideFatherPhone: z.string().optional().nullable(),
+  groomFatherName: z.string().optional().nullable(),
+  groomFatherPhone: z.string().optional().nullable(),
   musicUrl: z.string().optional().nullable(),
   musicType: z.enum(['SPOTIFY', 'UPLOAD']).optional().nullable(),
   primaryColor: z
@@ -156,9 +161,9 @@ export async function uploadPhoto(req: Request, res: Response) {
     file.buffer
   );
 
-  // Save URL into the wedding record immediately, replacing old URL
-  const field = purpose === 'cover' ? 'coverPhotoUrl' : purpose === 'hero' ? 'heroPhotoUrl' : null;
-  if (field) {
+  // Save URL into the wedding record based on purpose
+  if (purpose === 'cover' || purpose === 'hero') {
+    const field = purpose === 'cover' ? 'coverPhotoUrl' : 'heroPhotoUrl';
     // Fetch the current URL so we can delete the old S3 object
     const existing = await prisma.weddingDetails.findUnique({
       where: { adminId: req.user!.id },
@@ -182,6 +187,42 @@ export async function uploadPhoto(req: Request, res: Response) {
         }
       }
     }
+  } else if (purpose === 'audio') {
+    // Save musicUrl + set musicType to UPLOAD, delete old audio if any
+    const existing = await prisma.weddingDetails.findUnique({
+      where: { adminId: req.user!.id },
+      select: { musicUrl: true },
+    });
+    const oldUrl = existing?.musicUrl;
+
+    await prisma.weddingDetails.updateMany({
+      where: { adminId: req.user!.id },
+      data: { musicUrl: publicUrl, musicType: 'UPLOAD' },
+    });
+
+    // Delete old audio file from S3 (non-fatal)
+    if (oldUrl) {
+      const oldKey = extractKeyFromUrl(oldUrl);
+      if (oldKey) {
+        try {
+          await deleteS3Object(oldKey);
+        } catch (err) {
+          console.error('Failed to delete old audio S3 object (non-fatal):', err);
+        }
+      }
+    }
+  } else if (purpose === 'gallery') {
+    // Append to galleryUrls array
+    const existing = await prisma.weddingDetails.findUnique({
+      where: { adminId: req.user!.id },
+      select: { galleryUrls: true },
+    });
+    const currentUrls = existing?.galleryUrls || [];
+
+    await prisma.weddingDetails.updateMany({
+      where: { adminId: req.user!.id },
+      data: { galleryUrls: [...currentUrls, publicUrl] },
+    });
   }
 
   res.json({ success: true, data: { publicUrl } });
@@ -234,4 +275,35 @@ export async function togglePublish(req: Request, res: Response) {
   });
 
   res.json({ success: true, data: updated });
+}
+
+/**
+ * Delete the background music file from S3 and clear musicUrl/musicType from DB.
+ */
+export async function deleteMusic(req: Request, res: Response) {
+  const wedding = await prisma.weddingDetails.findUnique({
+    where: { adminId: req.user!.id },
+    select: { musicUrl: true },
+  });
+  if (!wedding) throw ApiError.notFound('Wedding not found');
+
+  // Delete from S3 if URL exists
+  if (wedding.musicUrl) {
+    const key = extractKeyFromUrl(wedding.musicUrl);
+    if (key) {
+      try {
+        await deleteS3Object(key);
+      } catch (err) {
+        console.error('S3 music delete failed (non-fatal):', err);
+      }
+    }
+  }
+
+  // Clear musicUrl and musicType from DB
+  await prisma.weddingDetails.updateMany({
+    where: { adminId: req.user!.id },
+    data: { musicUrl: null, musicType: null },
+  });
+
+  res.json({ success: true, message: 'Background music removed' });
 }

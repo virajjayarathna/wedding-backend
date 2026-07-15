@@ -47,6 +47,10 @@ model WeddingDetails {
   venueMapsUrl  String?
   bridePhone    String?
   groomPhone    String?
+  brideFatherName String?
+  brideFatherPhone String?
+  groomFatherName String?
+  groomFatherPhone String?
   timeline      Json       @default("[]")
   musicUrl      String?
   musicType     MusicType?
@@ -76,12 +80,24 @@ model Guest {
   dietaryNotes    String?
   notes           String?
   rsvpSubmittedAt DateTime?
+  brideRsvpContact BrideContact  @default(BRIDE)
+  groomRsvpContact GroomContact  @default(GROOM)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   wedding         WeddingDetails @relation(fields: [weddingId], references: [id], onDelete: Cascade)
 
   @@index([weddingId, rsvpStatus])
   @@index([token])
+}
+
+enum BrideContact {
+  BRIDE
+  BRIDE_FATHER
+}
+
+enum GroomContact {
+  GROOM
+  GROOM_FATHER
 }
 
 enum AdminStatus {

@@ -10,6 +10,7 @@ import {
   uploadPhoto,
   deleteGalleryPhoto,
   togglePublish,
+  deleteMusic,
 } from '../controllers/wedding.controller';
 import {
   listGuests,
@@ -26,7 +27,7 @@ import {
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB (supports MP3 audio files)
 });
 
 const router = Router();
@@ -41,6 +42,7 @@ router.patch('/wedding/timeline', asyncHandler(updateTimeline));
 router.post('/wedding/upload', upload.single('file'), asyncHandler(uploadPhoto));
 router.delete('/wedding/gallery/:key', asyncHandler(deleteGalleryPhoto));
 router.patch('/wedding/publish', asyncHandler(togglePublish));
+router.delete('/wedding/music', asyncHandler(deleteMusic));
 
 // Guest Management
 router.get('/guests', asyncHandler(listGuests));

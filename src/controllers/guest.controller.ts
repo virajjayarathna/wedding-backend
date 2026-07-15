@@ -16,6 +16,8 @@ const guestSchema = z.object({
   lastName: z.string().min(1),
   phone: z.string().optional(),
   maxAttendants: z.number().int().min(1).max(20).default(1),
+  brideRsvpContact: z.enum(['BRIDE', 'BRIDE_FATHER']).default('BRIDE'),
+  groomRsvpContact: z.enum(['GROOM', 'GROOM_FATHER']).default('GROOM'),
 });
 
 const TITLE_LABELS: Record<string, string> = {
