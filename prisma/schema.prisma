@@ -51,6 +51,10 @@ model WeddingDetails {
   brideFatherPhone String?
   groomFatherName String?
   groomFatherPhone String?
+  // Flexible list of RSVP point-of-contact people (name + phone pairs, max 8),
+  // configured in the admin "Venue & RSVP" tab. Guests reference entries here
+  // by id via Guest.firstRsvpContactId / Guest.secondRsvpContactId.
+  rsvpContacts  Json       @default("[]")
   timeline      Json       @default("[]")
   musicUrl      String?
   musicType     MusicType?
@@ -88,24 +92,16 @@ model Guest {
   dietaryNotes    String?
   notes           String?
   rsvpSubmittedAt DateTime?
-  brideRsvpContact BrideContact  @default(BRIDE)
-  groomRsvpContact GroomContact  @default(GROOM)
+  // References into WeddingDetails.rsvpContacts (by id). Optional — a guest
+  // doesn't need to have either contact assigned.
+  firstRsvpContactId  String?
+  secondRsvpContactId String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   wedding         WeddingDetails @relation(fields: [weddingId], references: [id], onDelete: Cascade)
 
   @@index([weddingId, rsvpStatus])
   @@index([token])
-}
-
-enum BrideContact {
-  BRIDE
-  BRIDE_FATHER
-}
-
-enum GroomContact {
-  GROOM
-  GROOM_FATHER
 }
 
 enum AdminStatus {

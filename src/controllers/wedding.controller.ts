@@ -54,6 +54,16 @@ const upsertWeddingSchema = z.object({
   pdfCeremonyName: z.string().optional(),
   pdfCeremonyTime: z.string().optional(),
   rsvpDeadline: z.string().datetime({ offset: true }).optional().nullable(),
+  rsvpContacts: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        name: z.string().min(1),
+        phone: z.string().min(1),
+      })
+    )
+    .max(8, 'You can add up to 8 RSVP contacts.')
+    .optional(),
 });
 
 const timelineSchema = z.array(

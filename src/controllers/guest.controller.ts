@@ -16,9 +16,29 @@ const guestSchema = z.object({
   lastName: z.string().min(1),
   phone: z.string().optional(),
   maxAttendants: z.number().int().min(1).max(20).default(1),
-  brideRsvpContact: z.enum(['BRIDE', 'BRIDE_FATHER']).default('BRIDE'),
-  groomRsvpContact: z.enum(['GROOM', 'GROOM_FATHER']).default('GROOM'),
+  // Optional references into WeddingDetails.rsvpContacts — neither is mandatory
+  firstRsvpContactId: z.string().min(1).optional().nullable(),
+  secondRsvpContactId: z.string().min(1).optional().nullable(),
 });
+
+/**
+ * Ensure the chosen RSVP contact id(s) are distinct and actually exist in the
+ * wedding's configured rsvpContacts list (set in the admin "Venue & RSVP" tab).
+ */
+function validateRsvpContactSelection(
+  wedding: { rsvpContacts: unknown },
+  firstId: string | null | undefined,
+  secondId: string | null | undefined
+) {
+  if (firstId && secondId && firstId === secondId) {
+    throw ApiError.badRequest('First and Second RSVP contact must be different.');
+  }
+  if (!firstId && !secondId) return;
+  const contacts = Array.isArray(wedding.rsvpContacts) ? (wedding.rsvpContacts as Array<{ id: string }>) : [];
+  const ids = new Set(contacts.map((c) => c.id));
+  if (firstId && !ids.has(firstId)) throw ApiError.badRequest('Invalid First RSVP contact selected.');
+  if (secondId && !ids.has(secondId)) throw ApiError.badRequest('Invalid Second RSVP contact selected.');
+}
 
 const TITLE_LABELS: Record<string, string> = {
   MR: 'Mr.', MRS: 'Mrs.', MS: 'Ms.', DR: 'Dr.', FAMILY: 'Family', MASTER: 'Master',
@@ -63,6 +83,7 @@ export async function listGuests(req: Request, res: Response) {
 export async function createGuest(req: Request, res: Response) {
   const body = guestSchema.parse(req.body);
   const wedding = await getWeddingForAdmin(req.user!.id);
+  validateRsvpContactSelection(wedding, body.firstRsvpContactId, body.secondRsvpContactId);
 
   const guest = await prisma.guest.create({
     data: { ...body, weddingId: wedding.id },
@@ -142,6 +163,10 @@ export async function updateGuest(req: Request, res: Response) {
     where: { id: req.params.id as string, weddingId: wedding.id },
   });
   if (!guest) throw ApiError.notFound('Guest not found');
+
+  const nextFirstId = 'firstRsvpContactId' in body ? body.firstRsvpContactId : guest.firstRsvpContactId;
+  const nextSecondId = 'secondRsvpContactId' in body ? body.secondRsvpContactId : guest.secondRsvpContactId;
+  validateRsvpContactSelection(wedding, nextFirstId, nextSecondId);
 
   const updated = await prisma.guest.update({ where: { id: req.params.id as string }, data: body });
   res.json({ success: true, data: updated });

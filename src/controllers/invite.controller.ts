@@ -13,6 +13,28 @@ const rsvpSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
+interface ResolvedRsvpContact {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+/**
+ * Look up a guest's assigned RSVP contact id in the wedding's configured
+ * rsvpContacts list and return the public-safe {id, name, phone} record.
+ * Only the two contacts a guest is actually assigned to are ever exposed —
+ * the full contact list (and other guests' contacts) is never sent to a guest.
+ */
+function resolveRsvpContact(
+  rsvpContacts: unknown,
+  contactId: string | null | undefined
+): ResolvedRsvpContact | null {
+  if (!contactId) return null;
+  const contacts = Array.isArray(rsvpContacts) ? (rsvpContacts as ResolvedRsvpContact[]) : [];
+  const match = contacts.find((c) => c && c.id === contactId);
+  return match ? { id: match.id, name: match.name, phone: match.phone } : null;
+}
+
 export async function resolveInvite(req: Request, res: Response) {
   const token = req.params.token as string;
 
@@ -41,8 +63,8 @@ export async function resolveInvite(req: Request, res: Response) {
         dietaryNotes: null,
         notes: null,
         rsvpSubmittedAt: null,
-        brideRsvpContact: 'BRIDE',
-        groomRsvpContact: 'GROOM',
+        firstRsvpContactId: null,
+        secondRsvpContactId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         wedding: weddingBySlug,
@@ -97,8 +119,8 @@ export async function resolveInvite(req: Request, res: Response) {
         attendingCount: guest.attendingCount,
         dietaryNotes: guest.dietaryNotes,
         rsvpSubmittedAt: guest.rsvpSubmittedAt,
-        brideRsvpContact: guest.brideRsvpContact,
-        groomRsvpContact: guest.groomRsvpContact,
+        firstRsvpContact: resolveRsvpContact(weddingDetails.rsvpContacts, guest.firstRsvpContactId),
+        secondRsvpContact: resolveRsvpContact(weddingDetails.rsvpContacts, guest.secondRsvpContactId),
       },
       wedding: {
         brideName: weddingDetails.brideName,
