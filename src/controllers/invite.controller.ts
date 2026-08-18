@@ -251,10 +251,11 @@ export async function generateInvitePdf(req: Request, res: Response) {
       rsvpDeadline: weddingDetails.rsvpDeadline,
       brideFatherName: weddingDetails.brideFatherName,
       groomFatherName: weddingDetails.groomFatherName,
-      brideFatherPhone: weddingDetails.brideFatherPhone,
-      groomFatherPhone: weddingDetails.groomFatherPhone,
-      bridePhone: weddingDetails.bridePhone,
-      groomPhone: weddingDetails.groomPhone,
+      // RSVP contacts printed on the card are this guest's assigned contacts
+      // from WeddingDetails.rsvpContacts (configured in the Venue & RSVP tab),
+      // same source used for the "First/Second RSVP Contact" selects on /guests.
+      firstRsvpContact: resolveRsvpContact(weddingDetails.rsvpContacts, guest.firstRsvpContactId),
+      secondRsvpContact: resolveRsvpContact(weddingDetails.rsvpContacts, guest.secondRsvpContactId),
     },
     {
       title: guest.title,
