@@ -146,6 +146,10 @@ export async function resolveInvite(req: Request, res: Response) {
         primaryColor: weddingDetails.primaryColor,
         accentColor: weddingDetails.accentColor,
         fontFamily: weddingDetails.fontFamily,
+        // Custom logo uploaded in the admin PDF tab — shown on the invite card
+        // in place of the bride/groom initials monogram when set.
+        pdfLogoUrl: toProxyUrl(weddingDetails.pdfLogoUrl),
+        pdfFont: weddingDetails.pdfFont,
       },
     },
   });
