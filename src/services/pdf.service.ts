@@ -95,7 +95,7 @@ export async function generateInvitationPdf(
     (c): c is PdfRsvpContact => !!c && !!c.name && !!c.phone
   );
   const rsvpContactsHtml = rsvpContacts
-    .map((c) => `${escapeHtml(c.name)} &middot; ${escapeHtml(c.phone)}`)
+    .map((c) => `${escapeHtml(c.name)} - ${escapeHtml(c.phone)}`)
     .join('<br>');
 
   const html = `
@@ -125,7 +125,7 @@ export async function generateInvitationPdf(
       height: 1040px;
       background: #FFFFFF;
       border: 1px solid ${accentColor};
-      padding: 34px 44px;
+      padding: 25px 40px;
       text-align: center;
       position: relative;
       display: flex;
@@ -156,185 +156,148 @@ export async function generateInvitationPdf(
       pointer-events: none;
     }
 
-    /* Logo badge — a compact framed box at the top of the card, sized to the
-       image rather than reserving a large empty block when unset. */
-    .logo-frame {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px 30px;
-      margin: 0 auto 18px;
-      border: 1.5px solid ${primaryColor};
-      border-radius: 8px;
-    }
-
-    .logo-frame img {
-      max-height: 84px;
-      max-width: 260px;
-      object-fit: contain;
-      display: block;
-    }
-
-    /* Slim ornamental divider used between sections instead of large blank gaps */
-    .ornament {
+    .logo-container {
+      margin-bottom: 25px;
+      height: 250px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      width: 100%;
-      margin: 12px 0;
     }
 
-    .ornament-line {
-      flex: 1;
-      max-width: 64px;
-      height: 1px;
-      background: ${accentColor};
-    }
-
-    .ornament-dot {
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: ${primaryColor};
-      flex-shrink: 0;
+    .logo-container img {
+      max-height: 250px;
+      max-width: 350px;
+      object-fit: contain;
     }
 
     .fathers-text {
       font-family: 'Playfair Display', serif;
-      font-size: 12.5px;
-      letter-spacing: 1.6px;
+      font-size: 13px;
+      letter-spacing: 2px;
       text-transform: uppercase;
       color: #333333;
-      margin-bottom: 4px;
-      line-height: 1.5;
+      margin-bottom: 10px;
+      line-height: 1.8;
     }
 
     .together-with {
-      font-family: 'Montserrat', sans-serif;
-      font-weight: 400;
-      font-size: 10px;
-      color: #8a8a8a;
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      color: #333333;
       text-transform: uppercase;
-      letter-spacing: 2.5px;
+      letter-spacing: 2px;
       display: inline-block;
-      margin: 4px 0;
+      margin: 5px 0;
     }
 
     .request-honor {
       font-family: 'Playfair Display', serif;
-      font-size: 12.5px;
+      font-size: 13px;
       color: #333333;
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin: 0 0 10px;
+      margin: 10px 0 15px;
     }
 
     .invite-guest {
       font-family: 'Playfair Display', serif;
-      font-size: 17px;
+      font-size: 18px;
       color: #333333;
-      letter-spacing: 0.5px;
-      margin: 10px 0;
-      padding: 10px 34px;
+      margin: 15px 0;
+      padding: 15px 40px;
       border-top: 1px solid ${accentColor};
       border-bottom: 1px solid ${accentColor};
     }
 
     .couple-names {
       font-family: '${wedding.pdfFont}', cursive;
-      font-size: 50px;
+      font-size: 52px;
       color: ${primaryColor};
-      line-height: 1.15;
-      margin: 12px 0;
+      line-height: 1.2;
+      margin: 20px 0;
       padding: 0 10px;
     }
 
     .celebrate-text {
       font-family: 'Playfair Display', serif;
-      font-size: 11.5px;
-      color: #333333;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-      line-height: 1.5;
-    }
-
-    .day-date {
-      font-family: 'Playfair Display', serif;
-      font-size: 13px;
-      letter-spacing: 2.5px;
-      text-transform: uppercase;
-      color: #333333;
-      margin-bottom: 8px;
-      line-height: 1.5;
-    }
-
-    .at-text {
-      font-family: 'Playfair Display', serif;
       font-size: 12px;
       color: #333333;
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin-bottom: 8px;
-      line-height: 1.5;
+      margin-bottom: 15px;
+      line-height: 1.8;
+    }
+
+    .day-date {
+      font-family: 'Playfair Display', serif;
+      font-size: 14px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #333333;
+      margin-bottom: 15px;
+      line-height: 1.8;
+    }
+
+    .at-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      color: #333333;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 15px;
+      line-height: 1.8;
     }
 
     .venue-name {
       font-family: 'Playfair Display', serif;
-      font-size: 16px;
+      font-size: 18px;
       color: #333333;
-      letter-spacing: 1.5px;
+      letter-spacing: 2px;
       text-transform: uppercase;
       display: block;
-      margin-top: 3px;
+      margin-top: 5px;
     }
 
     .time-text {
       font-family: 'Playfair Display', serif;
-      font-size: 11px;
+      font-size: 12px;
       color: #333333;
       letter-spacing: 1px;
       text-transform: uppercase;
-      line-height: 1.5;
-      margin-bottom: 4px;
+      line-height: 1.8;
+      margin-bottom: 10px;
     }
 
     .rsvp {
       font-family: 'Playfair Display', serif;
-      font-size: 11.5px;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 2px;
       color: #333333;
-      margin-top: 6px;
-      line-height: 1.6;
+      margin-top: 25px;
+      line-height: 2;
     }
 
     .rsvp-date {
-      color: ${primaryColor};
+      color: #333333;
     }
 
     .rsvp-contacts {
-      margin-top: 6px;
-      font-size: 10.5px;
-      letter-spacing: 0.5px;
-      text-transform: none;
-      color: #555555;
-      line-height: 1.7;
+      margin-top: 10px;
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: #333333;
     }
   </style>
 </head>
 <body>
   <div class="card">
-    ${wedding.pdfLogoUrl ? `<div class="logo-frame"><img src="${wedding.pdfLogoUrl}" alt="Logo" /></div>` : ''}
+    ${wedding.pdfLogoUrl ? `<div class="logo-container"><img src="${wedding.pdfLogoUrl}" alt="Logo" /></div>` : ''}
 
     <div class="fathers-text">
       MR. &amp; MRS. ${escapeHtml((wedding.brideFatherName || '').toUpperCase())}<br>
-      <span class="together-with">together with</span><br>
+      <span class="together-with">TOGETHER WITH</span><br>
       MR. &amp; MRS. ${escapeHtml((wedding.groomFatherName || '').toUpperCase())}
     </div>
-
-    <div class="ornament"><span class="ornament-line"></span><span class="ornament-dot"></span><span class="ornament-line"></span></div>
 
     <div class="request-honor">
       REQUEST THE HONOUR OF THE PRESENCE OF
@@ -353,23 +316,23 @@ export async function generateInvitationPdf(
     </div>
 
     <div class="day-date">
-      ${escapeHtml(wedding.pdfWeddingDay?.toUpperCase() || '')} &middot; ${escapeHtml(formattedDate)}
+      ON<br>
+      ${escapeHtml(wedding.pdfWeddingDay?.toUpperCase() || '')}<br>
+      ${escapeHtml(formattedDate)}
     </div>
 
     <div class="at-text">
-      AT
+      AT<br>
       <span class="venue-name">${escapeHtml(wedding.venueName)}</span>
     </div>
 
     <div class="time-text">
-      ${escapeHtml(format12Hour(wedding.pdfStartTime))} &ndash; ${escapeHtml(format12Hour(wedding.pdfEndTime))}<br>
+      FROM ${escapeHtml(format12Hour(wedding.pdfStartTime))} TO ${escapeHtml(format12Hour(wedding.pdfEndTime))}<br>
       ${escapeHtml(wedding.pdfCeremonyName)} @ ${escapeHtml(format12Hour(wedding.pdfCeremonyTime))}
     </div>
 
-    <div class="ornament"><span class="ornament-line"></span><span class="ornament-dot"></span><span class="ornament-line"></span></div>
-
     <div class="rsvp">
-      RSVP before <span class="rsvp-date">${escapeHtml(formattedRsvpDate)}</span>
+      RSVP before <span class="rsvp-date">${escapeHtml(formattedRsvpDate)}</span><br>
       ${rsvpContactsHtml ? `<div class="rsvp-contacts">${rsvpContactsHtml}</div>` : ''}
     </div>
   </div>
