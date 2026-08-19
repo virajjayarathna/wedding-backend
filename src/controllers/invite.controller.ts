@@ -4,6 +4,7 @@ import prisma from '../lib/prisma';
 import { ApiError } from '../utils/ApiError';
 import { extractKeyFromUrl } from '../services/s3.service';
 import { generateInvitationPdf } from '../services/pdf.service';
+import { resolvePdfTheme } from '../lib/theme';
 import { config } from '../config/env';
 
 const rsvpSchema = z.object({
@@ -146,9 +147,18 @@ export async function resolveInvite(req: Request, res: Response) {
         timeline: weddingDetails.timeline,
         musicUrl: toProxyUrl(weddingDetails.musicUrl),
         musicType: weddingDetails.musicType,
+        // Theme. Consumed by the client's resolveTheme() — sent whole, including
+        // nulls, because "unset" is meaningful there (fall back to the preset).
+        themePreset: weddingDetails.themePreset,
         primaryColor: weddingDetails.primaryColor,
         accentColor: weddingDetails.accentColor,
+        bgColor: weddingDetails.bgColor,
+        surfaceColor: weddingDetails.surfaceColor,
+        cardColor: weddingDetails.cardColor,
+        textColor: weddingDetails.textColor,
+        mutedColor: weddingDetails.mutedColor,
         fontFamily: weddingDetails.fontFamily,
+        bodyFont: weddingDetails.bodyFont,
         // Custom logo uploaded in the admin PDF tab — shown on the invite card
         // in place of the bride/groom initials monogram when set.
         pdfLogoUrl: toProxyUrl(weddingDetails.pdfLogoUrl),
@@ -239,6 +249,10 @@ export async function generateInvitePdf(req: Request, res: Response) {
     throw ApiError.notFound('This invitation link is no longer active.');
   }
 
+  // Resolve the couple's theme the same way the web invitation does, so the
+  // downloadable PDF isn't stuck on gold when they've picked another palette.
+  const pdfTheme = resolvePdfTheme(weddingDetails);
+
   const pdfBuffer = await generateInvitationPdf(
     {
       brideName: weddingDetails.brideName,
@@ -246,8 +260,10 @@ export async function generateInvitePdf(req: Request, res: Response) {
       weddingDate: weddingDetails.weddingDate,
       venueName: weddingDetails.venueName,
       venueAddress: weddingDetails.venueAddress,
-      primaryColor: weddingDetails.primaryColor,
-      accentColor: weddingDetails.accentColor,
+      primaryColor: pdfTheme.primary,
+      accentColor: pdfTheme.primaryLight,
+      textColor: pdfTheme.text,
+      cardColor: pdfTheme.card,
       pdfLogoUrl: weddingDetails.pdfLogoUrl,
       pdfFont: weddingDetails.pdfFont,
       pdfWeddingDay: weddingDetails.pdfWeddingDay,

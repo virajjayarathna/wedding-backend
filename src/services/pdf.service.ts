@@ -13,8 +13,13 @@ interface PdfWeddingData {
   weddingDate: string | Date;
   venueName?: string | null;
   venueAddress?: string | null;
+  // Already-resolved theme colours (see src/lib/theme.ts). The caller resolves
+  // them so the PDF matches the web invitation's palette rather than falling
+  // back to gold whenever a couple has only set a preset.
   primaryColor?: string;
   accentColor?: string;
+  textColor?: string;
+  cardColor?: string;
   pdfLogoUrl?: string | null;
   pdfFont?: string | null;
   pdfWeddingDay?: string | null;
@@ -87,6 +92,8 @@ export async function generateInvitationPdf(
 
   const primaryColor = wedding.primaryColor || '#C5A059'; // Default Gold
   const accentColor = wedding.accentColor || '#E8E8E8'; // Default Grey
+  const textColor = wedding.textColor || '#333333';
+  const cardColor = wedding.cardColor || '#FFFFFF';
 
   // Build the RSVP contact lines from this guest's assigned first/second RSVP
   // contacts (configured in Venue & RSVP, same source as the Guests page selects).
@@ -111,7 +118,7 @@ export async function generateInvitationPdf(
     body {
       width: 794px;
       height: 1123px;
-      background: #FFFFFF;
+      background: ${cardColor};
       font-family: 'Playfair Display', serif;
       display: flex;
       align-items: center;
@@ -123,7 +130,7 @@ export async function generateInvitationPdf(
     .card {
       width: 710px;
       height: 1040px;
-      background: #FFFFFF;
+      background: ${cardColor};
       border: 1px solid ${accentColor};
       padding: 25px 40px;
       text-align: center;
@@ -175,7 +182,7 @@ export async function generateInvitationPdf(
       font-size: 13px;
       letter-spacing: 2px;
       text-transform: uppercase;
-      color: #333333;
+      color: ${textColor};
       margin-bottom: 10px;
       line-height: 1.8;
     }
@@ -183,7 +190,7 @@ export async function generateInvitationPdf(
     .together-with {
       font-family: 'Playfair Display', serif;
       font-size: 13px;
-      color: #333333;
+      color: ${textColor};
       text-transform: uppercase;
       letter-spacing: 2px;
       display: inline-block;
@@ -193,7 +200,7 @@ export async function generateInvitationPdf(
     .request-honor {
       font-family: 'Playfair Display', serif;
       font-size: 13px;
-      color: #333333;
+      color: ${textColor};
       text-transform: uppercase;
       letter-spacing: 1px;
       margin: 10px 0 15px;
@@ -202,7 +209,7 @@ export async function generateInvitationPdf(
     .invite-guest {
       font-family: 'Playfair Display', serif;
       font-size: 18px;
-      color: #333333;
+      color: ${textColor};
       margin: 15px 0;
       padding: 15px 40px;
       border-top: 1px solid ${accentColor};
@@ -221,7 +228,7 @@ export async function generateInvitationPdf(
     .celebrate-text {
       font-family: 'Playfair Display', serif;
       font-size: 12px;
-      color: #333333;
+      color: ${textColor};
       text-transform: uppercase;
       letter-spacing: 1px;
       margin-bottom: 15px;
@@ -233,7 +240,7 @@ export async function generateInvitationPdf(
       font-size: 14px;
       letter-spacing: 3px;
       text-transform: uppercase;
-      color: #333333;
+      color: ${textColor};
       margin-bottom: 15px;
       line-height: 1.8;
     }
@@ -241,7 +248,7 @@ export async function generateInvitationPdf(
     .at-text {
       font-family: 'Playfair Display', serif;
       font-size: 13px;
-      color: #333333;
+      color: ${textColor};
       text-transform: uppercase;
       letter-spacing: 1px;
       margin-bottom: 15px;
@@ -251,7 +258,7 @@ export async function generateInvitationPdf(
     .venue-name {
       font-family: 'Playfair Display', serif;
       font-size: 18px;
-      color: #333333;
+      color: ${textColor};
       letter-spacing: 2px;
       text-transform: uppercase;
       display: block;
@@ -261,7 +268,7 @@ export async function generateInvitationPdf(
     .time-text {
       font-family: 'Playfair Display', serif;
       font-size: 12px;
-      color: #333333;
+      color: ${textColor};
       letter-spacing: 1px;
       text-transform: uppercase;
       line-height: 1.8;
@@ -272,20 +279,20 @@ export async function generateInvitationPdf(
       font-family: 'Playfair Display', serif;
       font-size: 12px;
       letter-spacing: 2px;
-      color: #333333;
+      color: ${textColor};
       margin-top: 25px;
       line-height: 2;
     }
 
     .rsvp-date {
-      color: #333333;
+      color: ${textColor};
     }
 
     .rsvp-contacts {
       margin-top: 10px;
       font-size: 11px;
       letter-spacing: 1px;
-      color: #333333;
+      color: ${textColor};
     }
   </style>
 </head>

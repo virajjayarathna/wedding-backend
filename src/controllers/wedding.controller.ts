@@ -14,6 +14,18 @@ import {
 
 // ─── Validation Schemas ────────────────────────────────────────────────────────
 
+/**
+ * Theme values end up inside a generated <style> block on the invite page, so
+ * they are validated at the edge rather than sanitised later: a strict 6-digit
+ * hex, and font families restricted to the ones the client actually loads from
+ * Google Fonts. Anything else is a 400 rather than a silent fallback, so a
+ * broken admin build surfaces immediately instead of quietly ignoring saves.
+ */
+const hexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a 6-digit hex colour, e.g. #C9A227');
+
+const HEADING_FONTS = ['Playfair Display', 'Cormorant Garamond', 'Lora', 'Cinzel', 'Montserrat'] as const;
+const BODY_FONTS = ['Montserrat', 'Inter', 'Lora', 'Cormorant Garamond'] as const;
+
 const upsertWeddingSchema = z.object({
   brideName: z.string().min(1),
   groomName: z.string().min(1),
@@ -38,15 +50,20 @@ const upsertWeddingSchema = z.object({
   groomFatherPhone: z.string().optional().nullable(),
   musicUrl: z.string().optional().nullable(),
   musicType: z.enum(['SPOTIFY', 'UPLOAD']).optional().nullable(),
-  primaryColor: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/)
-    .optional(),
-  accentColor: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/)
-    .optional(),
-  fontFamily: z.string().optional(),
+  // ── Theme ──────────────────────────────────────────────────────────────
+  // The client serialises these into a <style> block, so colours are pinned to
+  // a strict 6-digit hex and fonts to the families layout.tsx actually loads.
+  // Nullable = "clear this override and fall back to the preset".
+  themePreset: z.string().max(40).optional().nullable(),
+  primaryColor: hexColor.optional(),
+  accentColor: hexColor.optional(),
+  bgColor: hexColor.optional().nullable(),
+  surfaceColor: hexColor.optional().nullable(),
+  cardColor: hexColor.optional().nullable(),
+  textColor: hexColor.optional().nullable(),
+  mutedColor: hexColor.optional().nullable(),
+  fontFamily: z.enum(HEADING_FONTS).optional(),
+  bodyFont: z.enum(BODY_FONTS).optional().nullable(),
   pdfLogoUrl: z.string().optional().nullable(),
   pdfFont: z.string().optional(),
   pdfWeddingDay: z.string().optional(),

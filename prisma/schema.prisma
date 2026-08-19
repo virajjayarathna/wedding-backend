@@ -64,9 +64,26 @@ model WeddingDetails {
   timeline      Json       @default("[]")
   musicUrl      String?
   musicType     MusicType?
-  primaryColor  String     @default("#c0b258")
-  accentColor   String     @default("#333333")
-  fontFamily    String     @default("Playfair Display")
+  // ── Theme ────────────────────────────────────────────────────────────
+  // Resolved to CSS custom properties by the client app (src/lib/theme.ts).
+  // themePreset names a curated palette; the colour columns below are
+  // per-field overrides on top of it. All nullable so an untouched wedding
+  // falls back to the preset, and an unset preset falls back to Classic Gold.
+  // Every colour/font column is nullable and null means "inherit from the
+  // preset". primaryColor/accentColor/fontFamily used to be NOT NULL with
+  // defaults, but nothing ever rendered them, so the stored values were noise
+  // rather than choices — the 20260819180000 migration clears them.
+  themePreset   String?
+  primaryColor  String?
+  accentColor   String?
+  bgColor       String?
+  surfaceColor  String?
+  cardColor     String?
+  textColor     String?
+  mutedColor    String?
+  /// Heading font family.
+  fontFamily    String?
+  bodyFont      String?
   pdfLogoUrl    String?
   pdfFont       String?
   pdfWeddingDay String?
