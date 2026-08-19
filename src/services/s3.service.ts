@@ -21,7 +21,8 @@ const s3Client = new S3Client({
   requestChecksumCalculation: 'WHEN_REQUIRED',
 });
 
-export type UploadPurpose = 'cover' | 'hero' | 'gallery' | 'audio' | 'logo';
+// 'share' = the 1200x630 og:image used for WhatsApp / social link previews.
+export type UploadPurpose = 'cover' | 'hero' | 'gallery' | 'audio' | 'logo' | 'share';
 export type AllowedMimeType =
   | 'image/jpeg'
   | 'image/png'

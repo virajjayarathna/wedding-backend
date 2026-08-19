@@ -25,6 +25,7 @@ const upsertWeddingSchema = z.object({
   loveStory: z.string().optional(),
   coverPhotoUrl: z.string().optional().nullable(),
   heroPhotoUrl: z.string().optional().nullable(),
+  sharePreviewUrl: z.string().optional().nullable(),
   galleryUrls: z.array(z.string()).optional(),
   venueName: z.string().optional(),
   venueAddress: z.string().optional(),
@@ -76,7 +77,19 @@ const timelineSchema = z.array(
 );
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'audio/mpeg', 'audio/mp3', 'audio/ogg'] as const;
-const ALLOWED_PURPOSES = ['cover', 'hero', 'gallery', 'audio', 'logo'] as const;
+const ALLOWED_PURPOSES = ['cover', 'hero', 'gallery', 'audio', 'logo', 'share'] as const;
+
+/**
+ * Upload purposes that map 1:1 onto a single URL column on WeddingDetails.
+ * Expressed as a lookup rather than a chain of ifs so adding another
+ * single-image slot later stays a one-line change.
+ */
+const SINGLE_IMAGE_FIELDS: Record<string, string> = {
+  cover: 'coverPhotoUrl',
+  hero: 'heroPhotoUrl',
+  logo: 'pdfLogoUrl',
+  share: 'sharePreviewUrl',
+};
 
 // ─── Controllers ───────────────────────────────────────────────────────────────
 
@@ -98,6 +111,11 @@ export async function getWedding(req: Request, res: Response) {
       ...wedding,
       coverPhotoUrl: toProxyUrl(wedding.coverPhotoUrl),
       heroPhotoUrl: toProxyUrl(wedding.heroPhotoUrl),
+      sharePreviewUrl: toProxyUrl(wedding.sharePreviewUrl),
+      // pdfLogoUrl was previously returned raw — older records stored a direct
+      // s3.amazonaws.com URL, which 403s now that the bucket blocks public
+      // access, so route it through the media proxy like every other asset.
+      pdfLogoUrl: toProxyUrl(wedding.pdfLogoUrl),
       galleryUrls: wedding.galleryUrls.map((u) => toProxyUrl(u) ?? u),
       musicUrl: toProxyUrl(wedding.musicUrl),
     };
@@ -166,7 +184,9 @@ export async function uploadPhoto(req: Request, res: Response) {
 
   const purpose = req.body.purpose as string;
   if (!ALLOWED_PURPOSES.includes(purpose as typeof ALLOWED_PURPOSES[number])) {
-    throw ApiError.badRequest('Invalid purpose. Must be one of: cover, hero, gallery, audio');
+    throw ApiError.badRequest(
+      `Invalid purpose. Must be one of: ${ALLOWED_PURPOSES.join(', ')}`
+    );
   }
   if (!ALLOWED_MIME_TYPES.includes(file.mimetype as typeof ALLOWED_MIME_TYPES[number])) {
     throw ApiError.badRequest('Invalid file type. Allowed: JPEG, PNG, WebP, MP3, OGG');
@@ -180,11 +200,9 @@ export async function uploadPhoto(req: Request, res: Response) {
   );
 
   // Save URL into the wedding record based on purpose
-  if (purpose === 'cover' || purpose === 'hero' || purpose === 'logo') {
-    let field: string;
-    if (purpose === 'cover') field = 'coverPhotoUrl';
-    else if (purpose === 'hero') field = 'heroPhotoUrl';
-    else field = 'pdfLogoUrl';
+  const singleImageField = SINGLE_IMAGE_FIELDS[purpose];
+  if (singleImageField) {
+    const field: string = singleImageField;
     // Fetch the current URL so we can delete the old S3 object
     const existing = await prisma.weddingDetails.findUnique({
       where: { adminId: req.user!.id },

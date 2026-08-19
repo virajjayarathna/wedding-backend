@@ -130,6 +130,9 @@ export async function resolveInvite(req: Request, res: Response) {
         loveStory: weddingDetails.loveStory,
         coverPhotoUrl: toProxyUrl(weddingDetails.coverPhotoUrl),
         heroPhotoUrl: toProxyUrl(weddingDetails.heroPhotoUrl),
+        // Dedicated 1200x630 og:image for WhatsApp / social link previews.
+        // Read server-side by the invite page's generateMetadata().
+        sharePreviewUrl: toProxyUrl(weddingDetails.sharePreviewUrl),
         galleryUrls: weddingDetails.galleryUrls.map((u) => toProxyUrl(u) ?? u),
         venueName: weddingDetails.venueName,
         venueAddress: weddingDetails.venueAddress,

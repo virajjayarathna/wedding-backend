@@ -41,6 +41,12 @@ model WeddingDetails {
   loveStory     String?
   coverPhotoUrl String?
   heroPhotoUrl  String?
+  // Image used as the og:image on guest invite links — i.e. the thumbnail
+  // WhatsApp / Facebook / Viber render when a guest is sent their invitation
+  // URL. Uploaded in the admin "Media" tab and normalised to exactly
+  // 1200x630 JPEG in the browser before upload, because WhatsApp silently
+  // drops link-preview images that are oversized (>~600 KB) or oddly shaped.
+  sharePreviewUrl String?
   galleryUrls   String[]   @default([])
   venueName     String?
   venueAddress  String?
