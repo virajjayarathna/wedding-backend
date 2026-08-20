@@ -8,7 +8,7 @@ import { parseCsv } from '../utils/csvParser';
 
 // ─── Validation Schemas ────────────────────────────────────────────────────────
 
-const VALID_TITLES = ['MR', 'MRS', 'MS', 'DR', 'FAMILY', 'MASTER'] as const;
+const VALID_TITLES = ['MR', 'MRS', 'MR_AND_MRS', 'MS', 'DR', 'FAMILY', 'MASTER'] as const;
 
 const guestSchema = z.object({
   title: z.enum(VALID_TITLES),

@@ -46,6 +46,7 @@ interface PdfGuestData {
 const TITLE_MAP: Record<string, string> = {
   MR: 'Mr.',
   MRS: 'Mrs.',
+  MR_AND_MRS: 'Mr. & Mrs.',
   MS: 'Ms.',
   DR: 'Dr.',
   FAMILY: 'The',

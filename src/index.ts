@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 
 import { config } from './config/env';
 import { errorHandler } from './middleware/error.middleware';
+import { startAdminExpiryJob } from './services/adminExpiry.service';
 
 // Routes
 import authRoutes from './routes/auth.routes';
@@ -87,6 +88,7 @@ app.listen(config.port, () => {
   console.log(`   Environment : ${config.nodeEnv}`);
   console.log(`   Port        : ${config.port}`);
   console.log(`   Health      : http://localhost:${config.port}/health\n`);
+  startAdminExpiryJob();
 });
 
 export default app;

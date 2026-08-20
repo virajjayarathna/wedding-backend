@@ -142,6 +142,7 @@ enum MusicType {
 enum GuestTitle {
   MR
   MRS
+  MR_AND_MRS
   MS
   DR
   FAMILY

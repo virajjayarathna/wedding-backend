@@ -5,6 +5,7 @@ import { ApiError } from '../utils/ApiError';
 import { extractKeyFromUrl } from '../services/s3.service';
 import { generateInvitationPdf } from '../services/pdf.service';
 import { resolvePdfTheme } from '../lib/theme';
+import { assertInviteAccessible } from '../lib/subscription';
 import { config } from '../config/env';
 
 const rsvpSchema = z.object({
@@ -88,12 +89,10 @@ export async function resolveInvite(req: Request, res: Response) {
     select: { status: true, subscriptionEnd: true },
   });
 
-  if (!admin || admin.status !== 'ACTIVE') {
+  if (!admin) {
     throw ApiError.notFound('This invitation link is no longer active.');
   }
-  if (admin.subscriptionEnd && admin.subscriptionEnd < new Date()) {
-    throw ApiError.notFound('This invitation link is no longer active.');
-  }
+  assertInviteAccessible(admin, weddingDetails.weddingDate);
 
   /**
    * Converts a stored URL to a proxy URL if it points directly to S3.
@@ -242,12 +241,10 @@ export async function generateInvitePdf(req: Request, res: Response) {
     select: { status: true, subscriptionEnd: true },
   });
 
-  if (!admin || admin.status !== 'ACTIVE') {
+  if (!admin) {
     throw ApiError.notFound('This invitation link is no longer active.');
   }
-  if (admin.subscriptionEnd && admin.subscriptionEnd < new Date()) {
-    throw ApiError.notFound('This invitation link is no longer active.');
-  }
+  assertInviteAccessible(admin, weddingDetails.weddingDate);
 
   // Resolve the couple's theme the same way the web invitation does, so the
   // downloadable PDF isn't stuck on gold when they've picked another palette.
