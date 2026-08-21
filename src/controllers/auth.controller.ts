@@ -11,6 +11,11 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8),
+});
+
 function signToken(id: string, email: string, role: 'SUPER_ADMIN' | 'ADMIN') {
   return jwt.sign({ id, email, role }, config.jwt.secret, {
     expiresIn: config.jwt.expiresIn,
@@ -72,4 +77,32 @@ export async function getAdminMe(req: Request, res: Response) {
   });
   if (!admin) throw ApiError.notFound('Admin not found');
   res.json({ success: true, data: admin });
+}
+
+/**
+ * Self-service password change for the logged-in user (Admin or SuperAdmin).
+ * Requires the current password — this is not the forgot-password flow
+ * (that needs email delivery, not built yet; superadmin can force-reset an
+ * admin's password in the meantime via POST /superadmin/admins/:id/reset-password).
+ */
+export async function changePassword(req: Request, res: Response) {
+  const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+  const { id, role } = req.user!;
+
+  const user = role === 'SUPER_ADMIN'
+    ? await prisma.superAdmin.findUnique({ where: { id } })
+    : await prisma.admin.findUnique({ where: { id } });
+  if (!user) throw ApiError.notFound('User not found');
+
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) throw ApiError.unauthorized('Current password is incorrect');
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  if (role === 'SUPER_ADMIN') {
+    await prisma.superAdmin.update({ where: { id }, data: { passwordHash } });
+  } else {
+    await prisma.admin.update({ where: { id }, data: { passwordHash } });
+  }
+
+  res.json({ success: true, message: 'Password changed successfully' });
 }

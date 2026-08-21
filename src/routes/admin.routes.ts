@@ -23,6 +23,7 @@ import {
   getWhatsAppLink,
   regenerateToken,
   downloadCsvTemplate,
+  exportGuestsCsv,
 } from '../controllers/guest.controller';
 
 const upload = multer({
@@ -50,6 +51,7 @@ router.post('/guests', asyncHandler(createGuest));
 router.post('/guests/bulk', asyncHandler(bulkCreateGuests));
 router.get('/guests/rsvp-summary', asyncHandler(getRsvpSummary));
 router.get('/guests/csv-template', asyncHandler(downloadCsvTemplate));
+router.get('/guests/export', asyncHandler(exportGuestsCsv));
 router.get('/guests/:id', asyncHandler(getGuest));
 router.patch('/guests/:id', asyncHandler(updateGuest));
 router.delete('/guests/:id', asyncHandler(deleteGuest));

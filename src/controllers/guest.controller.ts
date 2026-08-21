@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { randomUUID } from 'crypto';
 import prisma from '../lib/prisma';
 import { ApiError } from '../utils/ApiError';
 import { config } from '../config/env';
 import { parseCsv } from '../utils/csvParser';
+import { generateGuestTokenValue, generateUniqueGuestToken } from '../lib/guestToken';
 
 // ─── Validation Schemas ────────────────────────────────────────────────────────
 
@@ -86,7 +86,7 @@ export async function createGuest(req: Request, res: Response) {
   validateRsvpContactSelection(wedding, body.firstRsvpContactId, body.secondRsvpContactId);
 
   const guest = await prisma.guest.create({
-    data: { ...body, weddingId: wedding.id },
+    data: { ...body, weddingId: wedding.id, token: generateGuestTokenValue() },
   });
 
   res.status(201).json({ success: true, data: guest });
@@ -139,7 +139,7 @@ export async function bulkCreateGuests(req: Request, res: Response) {
   }
 
   const result = await prisma.guest.createMany({
-    data: guestsData.map((g) => ({ ...g, weddingId: wedding.id })),
+    data: guestsData.map((g) => ({ ...g, weddingId: wedding.id, token: generateGuestTokenValue() })),
     skipDuplicates: false,
   });
 
@@ -264,14 +264,7 @@ export async function regenerateToken(req: Request, res: Response) {
   });
   if (!guest) throw ApiError.notFound('Guest not found');
 
-  // Generate a new unique token
-  let newToken: string;
-  let attempts = 0;
-  do {
-    newToken = randomUUID();
-    attempts++;
-    if (attempts > 10) throw ApiError.internal('Failed to generate unique token');
-  } while (await prisma.guest.findUnique({ where: { token: newToken } }));
+  const newToken = await generateUniqueGuestToken();
 
   const updated = await prisma.guest.update({
     where: { id: req.params.id as string },
@@ -294,5 +287,49 @@ export async function downloadCsvTemplate(_req: Request, res: Response) {
 
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="guest-import-template.csv"');
+  res.send(csvContent);
+}
+
+/**
+ * Quote a CSV field if it contains a comma, quote, or newline; double up
+ * any internal quotes. Free-text fields (dietaryNotes, notes) can contain
+ * any of those, so the plain join() the import template uses isn't safe here.
+ */
+function csvField(value: string | number | null | undefined): string {
+  const str = value === null || value === undefined ? '' : String(value);
+  if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+  return str;
+}
+
+export async function exportGuestsCsv(req: Request, res: Response) {
+  const wedding = await getWeddingForAdmin(req.user!.id);
+
+  const guests = await prisma.guest.findMany({
+    where: { weddingId: wedding.id },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const header = [
+    'title', 'firstName', 'lastName', 'phone', 'maxAttendants',
+    'rsvpStatus', 'attendingCount', 'dietaryNotes', 'notes', 'rsvpSubmittedAt',
+  ];
+  const rows = guests.map((g) => [
+    csvField(g.title),
+    csvField(g.firstName),
+    csvField(g.lastName),
+    csvField(g.phone),
+    csvField(g.maxAttendants),
+    csvField(g.rsvpStatus),
+    csvField(g.attendingCount),
+    csvField(g.dietaryNotes),
+    csvField(g.notes),
+    csvField(g.rsvpSubmittedAt ? g.rsvpSubmittedAt.toISOString() : ''),
+  ].join(','));
+
+  const csvContent = [header.join(','), ...rows].join('\n');
+  const filename = `guest-list-${wedding.weddingSlug}.csv`.replace(/[^a-z0-9.-]/gi, '-');
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   res.send(csvContent);
 }

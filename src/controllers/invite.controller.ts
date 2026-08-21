@@ -137,6 +137,7 @@ export async function resolveInvite(req: Request, res: Response) {
         venueName: weddingDetails.venueName,
         venueAddress: weddingDetails.venueAddress,
         venueMapsUrl: weddingDetails.venueMapsUrl,
+        rsvpDeadline: weddingDetails.rsvpDeadline,
         bridePhone: weddingDetails.bridePhone,
         groomPhone: weddingDetails.groomPhone,
         brideFatherName: weddingDetails.brideFatherName,
@@ -173,7 +174,7 @@ export async function submitRsvp(req: Request, res: Response) {
 
   const guest = await prisma.guest.findUnique({
     where: { token },
-    include: { wedding: { select: { isPublished: true } } },
+    include: { wedding: { select: { isPublished: true, rsvpDeadline: true } } },
   });
 
   if (!guest) {
@@ -185,6 +186,10 @@ export async function submitRsvp(req: Request, res: Response) {
   }
 
   if (!guest.wedding.isPublished) throw ApiError.forbidden('This invitation is not active.');
+
+  if (guest.wedding.rsvpDeadline && new Date() > guest.wedding.rsvpDeadline) {
+    throw ApiError.forbidden('The RSVP deadline for this wedding has passed.');
+  }
 
   // Validate attending count against max
   if (body.rsvpStatus === 'ATTENDING' && body.attendingCount) {

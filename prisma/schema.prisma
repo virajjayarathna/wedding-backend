@@ -109,7 +109,7 @@ model Guest {
   lastName        String
   phone           String?
   maxAttendants   Int            @default(1)
-  token           String         @unique @default(cuid())
+  token           String         @unique
   rsvpStatus      RsvpStatus     @default(PENDING)
   attendingCount  Int?
   dietaryNotes    String?
