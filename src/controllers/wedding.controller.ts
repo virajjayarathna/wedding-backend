@@ -55,14 +55,14 @@ const upsertWeddingSchema = z.object({
   // a strict 6-digit hex and fonts to the families layout.tsx actually loads.
   // Nullable = "clear this override and fall back to the preset".
   themePreset: z.string().max(40).optional().nullable(),
-  primaryColor: hexColor.optional(),
-  accentColor: hexColor.optional(),
+  primaryColor: hexColor.optional().nullable(),
+  accentColor: hexColor.optional().nullable(),
   bgColor: hexColor.optional().nullable(),
   surfaceColor: hexColor.optional().nullable(),
   cardColor: hexColor.optional().nullable(),
   textColor: hexColor.optional().nullable(),
   mutedColor: hexColor.optional().nullable(),
-  fontFamily: z.enum(HEADING_FONTS).optional(),
+  fontFamily: z.enum(HEADING_FONTS).optional().nullable(),
   bodyFont: z.enum(BODY_FONTS).optional().nullable(),
   pdfLogoUrl: z.string().optional().nullable(),
   pdfFont: z.string().optional(),
