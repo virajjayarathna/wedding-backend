@@ -7,9 +7,15 @@ interface PdfRsvpContact {
   phone: string;
 }
 
+type PdfCeremonyType = 'WEDDING' | 'HOME_COMING';
+
 interface PdfWeddingData {
   brideName: string;
   groomName: string;
+  // Which card template to render. WEDDING (the default for anything not
+  // explicitly set) keeps the original bride-first wording; HOME_COMING is the
+  // groom's-side card, so the couple and the "daughter & son" line both flip.
+  ceremonyType?: PdfCeremonyType | null;
   weddingDate: string | Date;
   venueName?: string | null;
   venueAddress?: string | null;
@@ -105,6 +111,16 @@ export async function generateInvitationPdf(
   const rsvpContactsHtml = rsvpContacts
     .map((c) => `${escapeHtml(c.name)} - ${escapeHtml(c.phone)}`)
     .join('<br>');
+
+  // Home-coming cards are sent from the groom's side, so the couple reads
+  // groom-first and the celebrate line swaps "daughter & son" accordingly.
+  const isHomeComing = wedding.ceremonyType === 'HOME_COMING';
+  const celebrateText = isHomeComing
+    ? 'TO CELEBRATE THE WEDDING OF THEIR SON &amp; DAUGHTER'
+    : 'TO CELEBRATE THE WEDDING OF THEIR DAUGHTER &amp; SON';
+  const coupleNames = isHomeComing
+    ? `${escapeHtml(wedding.groomName)} &amp; ${escapeHtml(wedding.brideName)}`
+    : `${escapeHtml(wedding.brideName)} &amp; ${escapeHtml(wedding.groomName)}`;
 
   const html = `
 <!DOCTYPE html>
@@ -316,11 +332,11 @@ export async function generateInvitationPdf(
     </div>
 
     <div class="celebrate-text">
-      TO CELEBRATE THE WEDDING OF THEIR DAUGHTER &amp; SON
+      ${celebrateText}
     </div>
 
     <div class="couple-names">
-      ${escapeHtml(wedding.brideName)} &amp; ${escapeHtml(wedding.groomName)}
+      ${coupleNames}
     </div>
 
     <div class="day-date">

@@ -11,6 +11,7 @@ const createAdminSchema = z.object({
   displayName: z.string().min(2),
   phone: z.string().optional(),
   temporaryPassword: z.string().min(8),
+  ceremonyType: z.enum(['WEDDING', 'HOME_COMING']).optional(),
   subscriptionStart: z.string().datetime({ offset: true }).optional(),
   subscriptionEnd: z.string().datetime({ offset: true }).optional(),
 });
@@ -19,6 +20,7 @@ const updateAdminSchema = z.object({
   email: z.string().email().optional(),
   displayName: z.string().min(2).optional(),
   phone: z.string().optional(),
+  ceremonyType: z.enum(['WEDDING', 'HOME_COMING']).optional(),
 });
 
 const subscriptionSchema = z.object({
@@ -73,6 +75,7 @@ export async function listAdmins(req: Request, res: Response) {
         displayName: true,
         phone: true,
         status: true,
+        ceremonyType: true,
         subscriptionStart: true,
         subscriptionEnd: true,
         createdAt: true,
@@ -99,11 +102,12 @@ export async function createAdmin(req: Request, res: Response) {
       displayName: body.displayName,
       phone: body.phone,
       passwordHash,
+      ceremonyType: body.ceremonyType ?? 'WEDDING',
       status: body.subscriptionStart && body.subscriptionEnd ? 'ACTIVE' : 'PENDING',
       subscriptionStart: body.subscriptionStart ? new Date(body.subscriptionStart) : null,
       subscriptionEnd: body.subscriptionEnd ? new Date(body.subscriptionEnd) : null,
     },
-    select: { id: true, email: true, displayName: true, status: true, subscriptionEnd: true, createdAt: true },
+    select: { id: true, email: true, displayName: true, status: true, ceremonyType: true, subscriptionEnd: true, createdAt: true },
   });
 
   res.status(201).json({ success: true, data: admin });
@@ -132,7 +136,7 @@ export async function updateAdmin(req: Request, res: Response) {
   const admin = await prisma.admin.update({
     where: { id: req.params.id as string },
     data: body,
-    select: { id: true, email: true, displayName: true, phone: true, status: true, updatedAt: true },
+    select: { id: true, email: true, displayName: true, phone: true, status: true, ceremonyType: true, updatedAt: true },
   });
 
   res.json({ success: true, data: admin });

@@ -22,6 +22,11 @@ model Admin {
   displayName       String
   phone             String?
   status            AdminStatus     @default(PENDING)
+  // Which card template this account's invitation renders. WEDDING keeps the
+  // original bride-first wording; HOME_COMING flips the couple to groom-first
+  // (see pdf.service.ts and the client's InvitationCard). Set by the superadmin
+  // at creation and changeable later from /superadmin/admins/:id.
+  ceremonyType      CeremonyType    @default(WEDDING)
   subscriptionStart DateTime?
   subscriptionEnd   DateTime?
   createdAt         DateTime        @default(now())
@@ -132,6 +137,11 @@ enum AdminStatus {
   ACTIVE
   SUSPENDED
   EXPIRED
+}
+
+enum CeremonyType {
+  WEDDING
+  HOME_COMING
 }
 
 enum MusicType {

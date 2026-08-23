@@ -86,7 +86,7 @@ export async function resolveInvite(req: Request, res: Response) {
   // Check admin subscription is active
   const admin = await prisma.admin.findUnique({
     where: { id: weddingDetails.adminId },
-    select: { status: true, subscriptionEnd: true },
+    select: { status: true, subscriptionEnd: true, ceremonyType: true },
   });
 
   if (!admin) {
@@ -125,6 +125,9 @@ export async function resolveInvite(req: Request, res: Response) {
       wedding: {
         brideName: weddingDetails.brideName,
         groomName: weddingDetails.groomName,
+        // Chosen by the superadmin on the admin account. Drives which card
+        // template the client renders (bride-first vs. groom-first wording).
+        ceremonyType: admin.ceremonyType,
         weddingDate: weddingDetails.weddingDate,
         weddingSlug: weddingDetails.weddingSlug,
         loveStory: weddingDetails.loveStory,
@@ -238,7 +241,7 @@ export async function generateInvitePdf(req: Request, res: Response) {
   // Check admin subscription
   const admin = await prisma.admin.findUnique({
     where: { id: weddingDetails.adminId },
-    select: { status: true, subscriptionEnd: true },
+    select: { status: true, subscriptionEnd: true, ceremonyType: true },
   });
 
   if (!admin) {
@@ -254,6 +257,7 @@ export async function generateInvitePdf(req: Request, res: Response) {
     {
       brideName: weddingDetails.brideName,
       groomName: weddingDetails.groomName,
+      ceremonyType: admin.ceremonyType,
       weddingDate: weddingDetails.weddingDate,
       venueName: weddingDetails.venueName,
       venueAddress: weddingDetails.venueAddress,
