@@ -75,8 +75,6 @@ export async function generateInvitationPdf(
     !wedding.pdfWeddingDay ||
     !wedding.pdfStartTime ||
     !wedding.pdfEndTime ||
-    !wedding.pdfCeremonyName ||
-    !wedding.pdfCeremonyTime ||
     !wedding.rsvpDeadline
   ) {
     throw ApiError.badRequest('Incomplete PDF configuration. Please ensure all mandatory fields are filled out in the PDF tab.');
@@ -353,8 +351,8 @@ export async function generateInvitationPdf(
     </div>
 
     <div class="time-text">
-      FROM ${escapeHtml(format12Hour(wedding.pdfStartTime))} TO ${escapeHtml(format12Hour(wedding.pdfEndTime))}<br>
-      ${escapeHtml(wedding.pdfCeremonyName)} @ ${escapeHtml(format12Hour(wedding.pdfCeremonyTime))}
+      FROM ${escapeHtml(format12Hour(wedding.pdfStartTime))} TO ${escapeHtml(format12Hour(wedding.pdfEndTime))}
+      ${wedding.pdfCeremonyName && wedding.pdfCeremonyTime ? `<br>${escapeHtml(wedding.pdfCeremonyName)} @ ${escapeHtml(format12Hour(wedding.pdfCeremonyTime))}` : ''}
     </div>
 
     <div class="rsvp">
