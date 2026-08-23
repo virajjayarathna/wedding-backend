@@ -17,6 +17,7 @@ const guestSchema = z.object({
   lastName: z.string().min(1),
   phone: z.string().optional(),
   maxAttendants: z.number().int().min(1).max(20).default(1),
+  sent: z.boolean().optional().default(false),
   // Optional references into WeddingDetails.rsvpContacts — neither is mandatory
   firstRsvpContactId: z.string().min(1).optional().nullable(),
   secondRsvpContactId: z.string().min(1).optional().nullable(),

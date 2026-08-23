@@ -116,6 +116,8 @@ model Guest {
   phone           String?
   maxAttendants   Int            @default(1)
   token           String         @unique @default(cuid())
+  // Manually toggled by the admin on /guests to track whether the invite was sent.
+  sent            Boolean        @default(false)
   rsvpStatus      RsvpStatus     @default(PENDING)
   attendingCount  Int?
   dietaryNotes    String?
