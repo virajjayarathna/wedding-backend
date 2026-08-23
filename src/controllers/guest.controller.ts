@@ -222,6 +222,15 @@ export async function getWhatsAppLink(req: Request, res: Response) {
   });
   if (!weddingDetails) throw ApiError.notFound('Wedding details not found');
 
+  const admin = await prisma.admin.findUnique({
+    where: { id: wedding.adminId },
+    select: { ceremonyType: true },
+  });
+  const isHomeComing = admin?.ceremonyType === 'HOME_COMING';
+  const coupleNames = isHomeComing
+    ? `${weddingDetails.groomName} & ${weddingDetails.brideName}`
+    : `${weddingDetails.brideName} & ${weddingDetails.groomName}`;
+
   const inviteUrl = `${config.guestInviteBaseUrl}/invite/${guest.token}`;
   const titleLabel = TITLE_LABELS[guest.title] || guest.title;
   const guestName = `${titleLabel} ${guest.firstName} ${guest.lastName}`;
@@ -234,7 +243,7 @@ export async function getWhatsAppLink(req: Request, res: Response) {
 
   const message =
     `Dear ${guestName},\n\n` +
-    `You are cordially invited to the wedding of ${weddingDetails.brideName} & ${weddingDetails.groomName} ` +
+    `You are cordially invited to the wedding of ${coupleNames} ` +
     `on ${weddingDate}.\n\n` +
     `Please view your personal invitation and kindly RSVP here:\n${inviteUrl}\n\n` +
     `We look forward to celebrating with you! 💍`;
