@@ -157,6 +157,8 @@ enum GuestTitle {
   DR
   FAMILY
   MASTER
+  BRIG
+  BRIG_AND_MRS
 }
 
 enum RsvpStatus {

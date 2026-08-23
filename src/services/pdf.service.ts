@@ -57,6 +57,8 @@ const TITLE_MAP: Record<string, string> = {
   DR: 'Dr.',
   FAMILY: 'The',
   MASTER: 'Master',
+  BRIG: 'Brig.',
+  BRIG_AND_MRS: 'Brig. and Mrs.',
 };
 
 /**

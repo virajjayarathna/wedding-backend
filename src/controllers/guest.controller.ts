@@ -8,7 +8,7 @@ import { parseCsv } from '../utils/csvParser';
 
 // ─── Validation Schemas ────────────────────────────────────────────────────────
 
-const VALID_TITLES = ['MR', 'MRS', 'MR_AND_MRS', 'MS', 'DR', 'FAMILY', 'MASTER'] as const;
+const VALID_TITLES = ['MR', 'MRS', 'MR_AND_MRS', 'MS', 'DR', 'FAMILY', 'MASTER', 'BRIG', 'BRIG_AND_MRS'] as const;
 
 const guestSchema = z.object({
   title: z.enum(VALID_TITLES),
@@ -41,7 +41,8 @@ function validateRsvpContactSelection(
 }
 
 const TITLE_LABELS: Record<string, string> = {
-  MR: 'Mr.', MRS: 'Mrs.', MS: 'Ms.', DR: 'Dr.', FAMILY: 'Family', MASTER: 'Master',
+  MR: 'Mr.', MRS: 'Mrs.', MR_AND_MRS: 'Mr. & Mrs.', MS: 'Ms.', DR: 'Dr.', FAMILY: 'Family', MASTER: 'Master',
+  BRIG: 'Brig.', BRIG_AND_MRS: 'Brig. and Mrs.',
 };
 
 // ─── Helper ────────────────────────────────────────────────────────────────────
