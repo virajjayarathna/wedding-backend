@@ -8,10 +8,11 @@ import { parseCsv } from '../utils/csvParser';
 
 // ─── Validation Schemas ────────────────────────────────────────────────────────
 
-const VALID_TITLES = ['MR', 'MRS', 'MR_AND_MRS', 'MS', 'DR', 'FAMILY', 'MASTER', 'BRIG', 'BRIG_AND_MRS'] as const;
+const VALID_TITLES = ['MR', 'MRS', 'MR_AND_MRS', 'MS', 'DR', 'FAMILY', 'MASTER', 'BRIG', 'BRIG_AND_MRS', 'MAJ'] as const;
 
 const guestSchema = z.object({
   title: z.enum(VALID_TITLES),
+  isFamily: z.boolean().optional().default(false),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   phone: z.string().optional(),
@@ -42,7 +43,7 @@ function validateRsvpContactSelection(
 
 const TITLE_LABELS: Record<string, string> = {
   MR: 'Mr.', MRS: 'Mrs.', MR_AND_MRS: 'Mr. & Mrs.', MS: 'Ms.', DR: 'Dr.', FAMILY: 'Family', MASTER: 'Master',
-  BRIG: 'Brig.', BRIG_AND_MRS: 'Brig. and Mrs.',
+  BRIG: 'Brig.', BRIG_AND_MRS: 'Brig. and Mrs.', MAJ: 'Maj.',
 };
 
 // ─── Helper ────────────────────────────────────────────────────────────────────
@@ -234,7 +235,9 @@ export async function getWhatsAppLink(req: Request, res: Response) {
 
   const inviteUrl = `${config.guestInviteBaseUrl}/invite/${guest.token}`;
   const titleLabel = TITLE_LABELS[guest.title] || guest.title;
-  const guestName = `${titleLabel} ${guest.firstName} ${guest.lastName}`;
+  const guestName = guest.isFamily
+    ? `${titleLabel} ${guest.firstName} ${guest.lastName} and Family`
+    : `${titleLabel} ${guest.firstName} ${guest.lastName}`;
   const weddingDate = weddingDetails.weddingDate.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',

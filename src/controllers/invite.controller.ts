@@ -112,6 +112,7 @@ export async function resolveInvite(req: Request, res: Response) {
       guest: {
         id: guest.id,
         title: guest.title,
+        isFamily: guest.isFamily,
         firstName: guest.firstName,
         lastName: guest.lastName,
         maxAttendants: guest.maxAttendants,
@@ -285,6 +286,7 @@ export async function generateInvitePdf(req: Request, res: Response) {
       title: guest.title,
       firstName: guest.firstName,
       lastName: guest.lastName,
+      isFamily: guest.isFamily,
     }
   );
 

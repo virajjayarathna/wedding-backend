@@ -47,6 +47,7 @@ interface PdfGuestData {
   title: string;
   firstName: string;
   lastName: string;
+  isFamily?: boolean;
 }
 
 const TITLE_MAP: Record<string, string> = {
@@ -59,6 +60,7 @@ const TITLE_MAP: Record<string, string> = {
   MASTER: 'Master',
   BRIG: 'Brig.',
   BRIG_AND_MRS: 'Brig. and Mrs.',
+  MAJ: 'Maj.',
 };
 
 /**
@@ -80,17 +82,18 @@ export async function generateInvitationPdf(
     throw ApiError.badRequest('Incomplete PDF configuration. Please ensure all mandatory fields are filled out in the PDF tab.');
   }
 
-  const isFamily = guest.title === 'FAMILY';
+  const isLegacyFamilyTitle = guest.title === 'FAMILY';
   let guestPrefix = '';
-  if (guest.title === 'FAMILY') guestPrefix = 'FAMILY';
+  if (isLegacyFamilyTitle) guestPrefix = 'FAMILY';
   else if (guest.title === 'MR') guestPrefix = 'MR.';
   else if (guest.title === 'MRS') guestPrefix = 'MRS.';
   else if (guest.title === 'MS') guestPrefix = 'MS.';
   else guestPrefix = TITLE_MAP[guest.title] || '';
 
-  const guestName = isFamily
+  const baseGuestName = isLegacyFamilyTitle
     ? `${guestPrefix} ${guest.lastName}`
     : `${guestPrefix} ${guest.firstName} ${guest.lastName}`;
+  const guestName = guest.isFamily ? `${baseGuestName} and Family` : baseGuestName;
 
   const weddingDate = new Date(wedding.weddingDate);
   const formattedDate = format(weddingDate, 'MMMM | dd | yyyy').toUpperCase();

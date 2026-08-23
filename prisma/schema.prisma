@@ -110,6 +110,7 @@ model Guest {
   id              String         @id @default(cuid())
   weddingId       String
   title           GuestTitle
+  isFamily        Boolean        @default(false)
   firstName       String
   lastName        String
   phone           String?
@@ -159,6 +160,7 @@ enum GuestTitle {
   MASTER
   BRIG
   BRIG_AND_MRS
+  MAJ
 }
 
 enum RsvpStatus {
