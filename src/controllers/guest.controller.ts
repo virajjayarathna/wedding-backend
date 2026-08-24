@@ -248,7 +248,7 @@ export async function getWhatsAppLink(req: Request, res: Response) {
 
   const message =
     `Dear ${guestName},\n\n` +
-    `You are cordially invited to the wedding of ${coupleNames} ` +
+    `You are cordially invited to the ${isHomeComing ? 'homecoming' : 'wedding'} of ${coupleNames} ` +
     `on ${weddingDate}.\n\n` +
     `Please view your personal invitation and kindly RSVP here:\n${inviteUrl}\n\n` +
     `We look forward to celebrating with you! 💍`;

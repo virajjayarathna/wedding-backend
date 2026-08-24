@@ -116,6 +116,15 @@ export async function getWedding(req: Request, res: Response) {
     include: { _count: { select: { guests: true } } },
   });
 
+  // Drives the wedding/homecoming wording and name order in the editor's
+  // preview text and share links (see pdf.service.ts / InvitationCard for the
+  // guest-facing equivalents). Lives on Admin, set by the superadmin.
+  const admin = await prisma.admin.findUnique({
+    where: { id: req.user!.id },
+    select: { ceremonyType: true },
+  });
+  const ceremonyType = admin?.ceremonyType ?? 'WEDDING';
+
   if (wedding) {
     // Transform stored S3 URLs to proxy URLs for backward compatibility
     const toProxyUrl = (url: string | null | undefined): string | null => {
@@ -126,6 +135,7 @@ export async function getWedding(req: Request, res: Response) {
     };
     const withProxied = {
       ...wedding,
+      ceremonyType,
       coverPhotoUrl: toProxyUrl(wedding.coverPhotoUrl),
       heroPhotoUrl: toProxyUrl(wedding.heroPhotoUrl),
       sharePreviewUrl: toProxyUrl(wedding.sharePreviewUrl),
