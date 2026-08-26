@@ -207,6 +207,7 @@ export async function submitRsvp(req: Request, res: Response) {
       dietaryNotes: body.dietaryNotes,
       notes: body.notes,
       rsvpSubmittedAt: new Date(),
+      rsvpUpdatedBy: 'GUEST',
     },
     select: {
       id: true,

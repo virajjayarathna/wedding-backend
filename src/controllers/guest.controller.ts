@@ -21,6 +21,12 @@ const guestSchema = z.object({
   // Optional references into WeddingDetails.rsvpContacts — neither is mandatory
   firstRsvpContactId: z.string().min(1).optional().nullable(),
   secondRsvpContactId: z.string().min(1).optional().nullable(),
+  // Manual RSVP override — only meaningful on updateGuest (createGuest ignores
+  // these since a freshly created guest is always PENDING).
+  rsvpStatus: z.enum(['PENDING', 'ATTENDING', 'DECLINING', 'MAYBE']).optional(),
+  attendingCount: z.number().int().min(1).optional(),
+  dietaryNotes: z.string().max(500).optional().nullable(),
+  notes: z.string().max(500).optional().nullable(),
 });
 
 /**
@@ -171,7 +177,32 @@ export async function updateGuest(req: Request, res: Response) {
   const nextSecondId = 'secondRsvpContactId' in body ? body.secondRsvpContactId : guest.secondRsvpContactId;
   validateRsvpContactSelection(wedding, nextFirstId, nextSecondId);
 
-  const updated = await prisma.guest.update({ where: { id: req.params.id as string }, data: body });
+  const data: Record<string, unknown> = { ...body };
+
+  // Admin manually setting/changing the RSVP status — stamp who did it, same as
+  // the guest-facing submitRsvp does for their own submissions. Whichever side
+  // writes last wins; there's no locking, so a guest visiting their invite link
+  // after an admin edit will still overwrite it via submitRsvp as normal.
+  if (body.rsvpStatus) {
+    const nextMaxAttendants = 'maxAttendants' in body && body.maxAttendants !== undefined
+      ? body.maxAttendants
+      : guest.maxAttendants;
+    if (body.rsvpStatus === 'ATTENDING') {
+      const count = body.attendingCount ?? guest.attendingCount ?? 1;
+      if (count > nextMaxAttendants) {
+        throw ApiError.badRequest(
+          `Maximum allowed attendants is ${nextMaxAttendants}. You entered ${count}.`
+        );
+      }
+      data.attendingCount = count;
+    } else {
+      data.attendingCount = null;
+    }
+    data.rsvpUpdatedBy = 'ADMIN';
+    data.rsvpSubmittedAt = new Date();
+  }
+
+  const updated = await prisma.guest.update({ where: { id: req.params.id as string }, data });
   res.json({ success: true, data: updated });
 }
 

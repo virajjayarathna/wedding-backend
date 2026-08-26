@@ -123,6 +123,9 @@ model Guest {
   dietaryNotes    String?
   notes           String?
   rsvpSubmittedAt DateTime?
+  // Who most recently set rsvpStatus — the guest via their invite link, or an
+  // admin editing manually on /guests. Null until the first status change.
+  rsvpUpdatedBy   RsvpUpdatedBy?
   // References into WeddingDetails.rsvpContacts (by id). Optional — a guest
   // doesn't need to have either contact assigned.
   firstRsvpContactId  String?
@@ -170,4 +173,9 @@ enum RsvpStatus {
   ATTENDING
   DECLINING
   MAYBE
+}
+
+enum RsvpUpdatedBy {
+  ADMIN
+  GUEST
 }
