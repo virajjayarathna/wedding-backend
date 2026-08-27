@@ -1,4 +1,14 @@
--- Guest.title becomes a plain string so admins can type a custom title
--- (e.g. "Rev.", "Justice") instead of being limited to the fixed enum list.
+-- Step 1 of 2: Guest.title becomes plain text so admins can enter a custom
+-- title, instead of being limited to the fixed enum list.
+--
+-- Safe: enum -> text is a native Postgres cast, the on-disk value of an enum
+-- IS its label string, so every existing value ('MR', 'MRS', 'FAMILY', ...)
+-- comes out unchanged. No rows are dropped or altered in content, only the
+-- column's declared type changes. Verify after applying with:
+--   SELECT title, count(*) FROM "Guest" GROUP BY title;
+-- and compare against the same query run before this migration.
+--
+-- The old "GuestTitle" enum type itself is intentionally left in place here
+-- (still exists in the catalog, just unused by any column) so this step can
+-- be verified before the type is dropped in the next migration.
 ALTER TABLE "Guest" ALTER COLUMN "title" TYPE TEXT USING "title"::TEXT;
-DROP TYPE "GuestTitle";
