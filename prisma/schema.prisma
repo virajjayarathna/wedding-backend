@@ -109,7 +109,7 @@ model WeddingDetails {
 model Guest {
   id              String         @id @default(cuid())
   weddingId       String
-  title           GuestTitle
+  title           String
   isFamily        Boolean        @default(false)
   firstName       String
   lastName        String
@@ -153,19 +153,6 @@ enum CeremonyType {
 enum MusicType {
   SPOTIFY
   UPLOAD
-}
-
-enum GuestTitle {
-  MR
-  MRS
-  MR_AND_MRS
-  MS
-  DR
-  FAMILY
-  MASTER
-  BRIG
-  BRIG_AND_MRS
-  MAJ
 }
 
 enum RsvpStatus {

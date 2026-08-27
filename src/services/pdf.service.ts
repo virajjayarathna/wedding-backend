@@ -88,7 +88,7 @@ export async function generateInvitationPdf(
   else if (guest.title === 'MR') guestPrefix = 'MR.';
   else if (guest.title === 'MRS') guestPrefix = 'MRS.';
   else if (guest.title === 'MS') guestPrefix = 'MS.';
-  else guestPrefix = TITLE_MAP[guest.title] || '';
+  else guestPrefix = TITLE_MAP[guest.title] || guest.title;
 
   const baseGuestName = isLegacyFamilyTitle
     ? `${guestPrefix} ${guest.lastName}`

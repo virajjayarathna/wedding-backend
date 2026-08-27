@@ -8,10 +8,8 @@ import { parseCsv } from '../utils/csvParser';
 
 // ─── Validation Schemas ────────────────────────────────────────────────────────
 
-const VALID_TITLES = ['MR', 'MRS', 'MR_AND_MRS', 'MS', 'DR', 'FAMILY', 'MASTER', 'BRIG', 'BRIG_AND_MRS', 'MAJ'] as const;
-
 const guestSchema = z.object({
-  title: z.enum(VALID_TITLES),
+  title: z.string().min(1).max(50),
   isFamily: z.boolean().optional().default(false),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
@@ -137,14 +135,9 @@ export async function bulkCreateGuests(req: Request, res: Response) {
     guestsData = body.guests;
   }
 
-  // Validate all titles
-  const invalidTitles = guestsData
-    .filter((g) => !VALID_TITLES.includes(g.title))
-    .map((g) => g.title);
-  if (invalidTitles.length > 0) {
-    throw ApiError.badRequest(
-      `Invalid titles: ${[...new Set(invalidTitles)].join(', ')}. Valid: ${VALID_TITLES.join(', ')}`
-    );
+  const missingTitles = guestsData.filter((g) => !g.title || !String(g.title).trim());
+  if (missingTitles.length > 0) {
+    throw ApiError.badRequest('Every guest row must have a title.');
   }
 
   const result = await prisma.guest.createMany({
